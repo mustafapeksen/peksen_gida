@@ -1,0 +1,66 @@
+# Yerel ortam değerleri; yalnız boş şablon izlenir.
+.env
+.env.*
+!.env.example
+!.env.*.example
+
+# Kimlik bilgileri ve Android imzalama
+secrets/
+credentials/
+**/key.properties
+*.jks
+*.keystore
+*.p12
+*.pfx
+*.pem
+*.key
+**/service-account*.json
+**/service_account*.json
+
+# Dart / Flutter tarafından üretilen yerel dosyalar
+.dart_tool/
+.packages
+.pub/
+.pub-cache/
+.flutter-plugins
+.flutter-plugins-dependencies
+build/
+coverage/
+*.apk
+*.aab
+*.symbols
+*.map.json
+
+# Android yerel SDK / Gradle / native çıktılar
+**/local.properties
+.gradle/
+**/.cxx/
+**/.externalNativeBuild/
+android/captures/
+
+# İleride platform eklenirse oluşan yerel çıktılar
+**/Flutter/ephemeral/
+**/Flutter/Generated.xcconfig
+**/Flutter/flutter_export_environment.sh
+**/Flutter/.last_build_id
+**/Pods/
+**/.symlinks/
+
+# Supabase CLI yerel geçici çıktıları
+supabase/.temp/
+supabase/.branches/
+
+# Editör, işletim sistemi ve geçici dosyalar
+.idea/
+*.iml
+.vscode/
+.DS_Store
+Thumbs.db
+Desktop.ini
+*.log
+*.tmp
+*.swp
+*.swo
+~$*
+
+# Uygulama için pubspec.lock, kaynak DOCX, docs ve migrations ignore edilmez.
