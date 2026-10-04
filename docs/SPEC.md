@@ -1,5 +1,7 @@
 # Pekşen Gıda teknik kapsamı
 
+**4 Ekim 2026 uygulama revizyonu:** Aşağıdaki 39 bölüm kaynak DOCX'in tarihsel aktarımıdır. Kullanıcının sonradan onayladığı [DECISIONS B-01–B-09 ve T-12](DECISIONS.md#4-ekim-2026--kullanıcı-tarafından-onaylanan-iş-kararları), çelişen kaynak ifadelerinden önce gelir: cari aşım Manager/Owner onayı ister; rezervasyon submitted, fiziksel düşüm picked aşamasındadır; iskonto takvim çeyreği net toplamına dayanır; para integer kuruştur; iki atanmış driver işlem yapabilir; teslimat istisnasını Manager/Owner çözebilir. Ayrıntılar ve R-01–R-07 açık soruları karar kaydındadır. Kaynak DOCX ve aşağıdaki asıl aktarım değiştirilmemiştir.
+
 Kaynak: [Pekşen Gıda Teknik Tasarım ve Codex Geliştirme Planı v3](Peksen_Gida_Teknik_Tasarim_v3.docx), revizyon 1 Ekim 2026. Aktarım tarihi: 2 Ekim 2026. Bu dosya bir özet değildir; kaynak belgenin 39 bölümünün tüm metni ve 7 tablosu aşağıda korunmuştur. Başlık, liste, tablo ve akış biçimleri Markdown için düzenlenmiştir.
 
 Bu tur yalnızca Faz 1 hazırlığıdır; aşağıdaki uygulama mimarisi, ekranlar ve diğer fazlar hedef kapsamdır, uygulanmış özellikler değildir. Güncel durum [PROGRESS.md](PROGRESS.md), faz takibi [PLAN.md](PLAN.md), kararlar [DECISIONS.md](DECISIONS.md), doğrulama planı [TESTING.md](TESTING.md) içindedir.
@@ -756,4 +758,3 @@ Pekşen Gıda projesini bu teknik tasarıma göre geliştir. Önce mevcut depoyu
 ## 39 Sonraki görev ve devam metni
 
 AGENTS.md, docs/SPEC.md, docs/PLAN.md, docs/DECISIONS.md ve docs/PROGRESS.md dosyalarını oku. Son doğrulanmış adımdan devam et. Sıradaki görevin amacını ve kabul ölçütlerini belirle, yalnızca o görevi uygula. Mevcut iş kurallarını değiştirme; ilgili kritik karar eksikse bağımsız çalışmayı sürdür ve gerekli soruyu belirt. Değişikliğe uygun testleri çalıştır, çalıştıramadıklarını açıkça yaz ve ilerleme kaydını güncelle.
-

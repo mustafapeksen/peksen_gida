@@ -1,8 +1,8 @@
 # Pekşen Gıda geliştirme planı
 
-Kaynak: [Peksen_Gida_Teknik_Tasarim_v3.docx](Peksen_Gida_Teknik_Tasarim_v3.docx), özellikle §33–39. Kayıt tarihi: 2 Ekim 2026; son durum kontrolü: 3 Ekim 2026. İş kapsamı ve Flutter/Supabase mimarisi [SPEC.md](SPEC.md) içindedir.
+Kaynak: [Peksen_Gida_Teknik_Tasarim_v3.docx](Peksen_Gida_Teknik_Tasarim_v3.docx), özellikle §33–39. Kayıt tarihi: 2 Ekim 2026; son durum kontrolü: 4 Ekim 2026. İş kapsamı ve Flutter/Supabase mimarisi [SPEC.md](SPEC.md) içindedir.
 
-Faz 1 dokümantasyonu tamamlanmıştır; mevcut görev yalnızca Faz 2 Flutter iskeleti, tema ve routing kapsamındadır. Faz 3–17 uygulanmamıştır. Aşağıdaki faz adları ve kabul ölçütleri kaynak §33'ten aktarılmıştır. Bağımlılıklar, bu kapsamın uygulanması için hazırlanan planlama sırasıdır; yeni iş kuralı değildir. Kritik iş kuralı açık olduğunda [DECISIONS.md](DECISIONS.md) kararı olmadan ona bağlı uygulama veya beklenen test sonucu uydurulmaz.
+Faz 1–3 tamamlanmıştır; Faz 3 kabulü **migration + seed ve mevcut client hazırlığı** ile sınırlıdır. Kullanıcının 4 Ekim B-01–B-09 onaylarıyla 25 kaynak tablo ve 10 yardımcı tablo kuruldu. Boş DB kurulumu/seed başarılı, identity 19/19 ve business 97/97 PASS; Flutter pub get/analyze/65 test/debug build çıkış 0. Faz 4–17 uygulanmamıştır. Aşağıdaki kabul ölçütleri kaynak §33'ten aktarılmıştır; migration/seed kabulü gerçek sipariş/cari/stok servislerini kapsamaz. [DECISIONS R-01–R-07](DECISIONS.md) ilgili sonraki işlem fazlarından önce çözülür; açık formül uygulamaya gömülmez.
 
 ## Durumlar ve ilerleme kuralı
 
@@ -21,7 +21,7 @@ Bir faz birden fazla küçük göreve ayrılır. Her görev amaç, kapsam, bağ�
 | --- | --- | --- | --- | --- |
 | 1 | Repository + AGENTS.md + docs/SPEC.md + karar ve ilerleme kayıtları | Mevcut depo ve kaynak DOCX okunur; mevcut dosyalar korunur. | Kapsam, açık kararlar, klasör yapısı ve komutlar yazılı; henüz uygulama tamamlandı iddiası yok. | tamamlandı |
 | 2 | Flutter iskeleti + tema + routing | Faz 1; Flutter/Android araçları ve seçilecek sürümler doğrulanır. İş formüllerinden bağımsız iskelet yapılabilir. | Uygulama açılır; giriş, yükleniyor, boş liste ve hata ekranları çalışır; rol bazlı menü iskeleti hazırdır. | tamamlandı |
-| 3 | Supabase migrations + seed | Faz 1–2; §37 veri modeli eksikleri ve şemayı etkileyen para, durum, stok kararları ilgili migration öncesi kaydedilir. Yerel/yalıtılmış test ortamı hazırlanır. | Boş veritabanı migration ile kurulabilir; yedi rol için sentetik test kullanıcıları ve örnek kayıtlar bulunur. | bekliyor |
+| 3 | Supabase migrations + seed | Faz 1–2; B-01–B-09 ve T-12, yerel sentetik Docker hedefi. | Boş veritabanı migration ile kurulabilir; yedi rol için sentetik test kullanıcıları ve örnek kayıtlar bulunur. | tamamlandı; 25 kaynak + 10 yardımcı tablo, 19+97 DB test |
 | 4 | Auth + RBAC + RLS | Faz 2–3; çalışan hesabı/davet akışı, rol sınırları ve müşteri ilişkileri netleşir. | Müşteri ve çalışan oturumları çalışır; yetkisiz rol değişimi, başka müşteri kaydı ve maaş verisi erişimi testlerde reddedilir. | bekliyor |
 | 5 | Products + units + pricing | Faz 3–4; iskonto takvimi/ölçümü, TL ve dönüşüm hassasiyeti, yuvarlama ve snapshot adları karara bağlanır. | Birim dönüşümleri ve minimum miktar doğrulanır; fiyat backend tarafından hesaplanır; fiyat geçmişi ve sipariş snapshotları test edilir. | bekliyor |
 | 6 | Customer experience | Faz 2–5; sipariş oluşturmayı etkileyen cari, stok, durum ve güvenilir işlem kararları gerekir. Faz 8–9'un ayrıntılı ekranları beklenmeden ortak backend işleminin gereken en küçük dilimi kurulur. | Katalog, müşteri fiyatı, sepet ve sipariş oluşturma akışı çalışır; fiyat/stok değişiminde açıklayıcı sonuç gösterilir. | bekliyor |
@@ -50,7 +50,7 @@ Son kanıt ve kontrol sonuçları [PROGRESS.md](PROGRESS.md) içinde tutulur. A�
 5. Mevcut ve hedef klasör yapısı, kurulum/doğrulama komutları ve gerekli ortam açıkça yazılmalı; uygulanmamış komutlar başarılı diye gösterilmemeli.
 6. Faz 1 görevi içinde Flutter projesi veya uygulama modülleri oluşturulmamalı; commit, push ve yayınlama yapılmamalı. Kullanıcının sonraki Faz 2 görevi yalnızca aşağıdaki iskelet için yetki vermiştir; bu tarihsel ölçüt Faz 2'yi engellemez.
 
-## Faz 2 görevi — mevcut kapsam
+## Faz 2 görevi — tamamlanan kapsamın kaydı
 
 **Amaç:** Android'de açılan Flutter iskeletini tema, go_router ve Riverpod ile kurmak; giriş, yükleniyor, boş liste, hata ekranları ve yedi role ait menü iskeletini göstermek.
 
@@ -75,9 +75,40 @@ Son kanıt ve kontrol sonuçları [PROGRESS.md](PROGRESS.md) içinde tutulur. A�
 
 **3 Ekim 2026 son kabul:** Mevcut iskelet, paketler ve geçen 42 test değiştirilmeden korundu. Kayıtlı pub get, analyze, 42/42 test ve debug build çıkış 0'dır; yeniden çalıştırılmadı. Bağlı emulator-5554 üzerinde mevcut integration testi 1/1 başarı ve çıkış 0 ile bitti. Normal debug APK ayrıca ADB ile kuruldu (çıkış 0) ve soğuk başlatıldı (`Status: ok`, çıkış 0). Giriş, Android klavyesinde iki alana erişim, rol seçim listesi, Depo/Ürünler örneği, ortak durumlar ve örnek geri akışı görüntüler üzerinden incelendi. Yedi rol/70 menünün tamamı, bilinmeyen rota ve 320×568/2× yazı koşulları widget kanıtına dayanır; bütün ekranların cihazda görsel kabulü iddia edilmez. **Faz 2 tamamlandı; Faz 3 başlamadı.** Görsel olarak incelenmeyen ekran/cihaz koşulları TESTING'de açıkça listelenmiştir.
 
-## Faz 3 hazırlığı — sonraki kullanıcı görevi
+## Faz 3 — son kabul, 4 Ekim 2026 iş onaylarından sonra
 
-Faz 3'e bu görevde başlanmaz. İlk iş mevcut kayıtları okuyup yerel Supabase CLI/konteyner ortamını ve boş, yalıtılmış sentetik test veritabanı hedefini doğrulamaktır. Migration öncesinde A-01–A-08 ve A-11–A-13'ün şemayı etkileyen soruları; konum tabloları için A-09 ayrıca ele alınır. Kanonik snapshot alanları, eksik tablolar/FK'ler, yedi rol ve müşteri ilişkileri, para hassasiyeti, sipariş durum boyutları ve stok gösterimi kaydedilmeden bağımlı migration/seed yazılmaz. Amaç sürümlü migration ve yedi rol için sentetik seed'dir; canlı veritabanı bağlantısı veya ürün formülü varsayımı değildir.
+| Ölçüt | Kanıt / sonuç |
+| --- | --- |
+| Boş DB migration ile kurulabilir | İki migration ve iki seed; son `db reset --local` çıkış 0. |
+| Kaynak veri modeli | 25 kaynak tablo + 10 yardımcı; ilk identity migration/seed korunur. |
+| Yedi rol ve örnek kayıtlar | Sekiz sentetik Auth/profile, iki kuruluş; ürün/birim/stok/sipariş/teslimat/ödeme örnekleri. |
+| DB bütünlük ve kapalı erişim | Identity 19/19 ve business 97/97 PASS, çıkış 0; Faz 4 policy yok. |
+| Flutter hazırlığı korunur | pub get/analyze çıkış 0, 65/65 test ve debug build çıkış 0. Kod/test değişmedi. |
+| Kalan kararlar/kapsam sınırı | B-01–B-09 onaylı, T-12 teknik şema; R-01–R-07/A-14 sonraki servis/izin işleri. |
+
+**Faz 3 tamamlandı (migration/seed kapsamı).** Faz 4'e geçilmez. İlgili yeni görev gelmeden gerçek Auth, fiyat/stok/payment transaction, izin politikası, GPS/push yapılmaz. Bu tur integration/görsel kontrol tekrarlanmadı; önceki Android başarısı tarihsel olarak korunur. Son komutlar ve sınırlar PROGRESS/TESTING başındadır.
+
+## Faz 3 ilk dilim ve ortam bekleme sürecinin tarihsel kaydı
+
+**Amaç:** Kaynağın migration/seed kabulüne ilerlemek; kullanıcının ayrıca istediği güvenli env/config, Supabase client başlangıcı ve auth durum gözlemini Faz 2'yi koruyarak hazırlamak. Gerçek oturum açma/RBAC/RLS izin politikaları Faz 4'te kalır.
+
+**Bağımsız dilim:** SPEC §2/3/25 için yedi rol ve profiles/customers/customer_users; sekiz sentetik kullanıcı/identity (iki customer), iki kuruluş ve üyelik seed'i; kapalı istemci erişimi ve 19 DB testi. Teknik seçimler T-07–T-10'da kayıtlıdır. Diğer 22 kaynak tablosu ve eksik varlıklar A-01–A-13 bağımlılıkları çözülmeden oluşturulmaz; bu erteleme tam şema kabulünü azaltmaz.
+
+**Kabul ölçütleri ve son durum:**
+
+1. Boş yerel Supabase DB migration ile kurulur: dosyalar hazır, **doğrulanmadı**. Docker/Podman yok; start çıkış 1.
+2. Yedi role ait sentetik kullanıcılar ve örnek kayıtlar DB'de bulunur: seed hazır, **çalıştırılmadı**. Ürün/stok/sipariş örnekleri açık kararları bekler.
+3. Güvenli public config ve istemci/auth-state altyapısı hazırlanır: uygulandı; yapılandırmasız/bozuk/yükleniyor/hata/SDK başlangıcı testleri mevcut. Oturum gözlemi yetkilendirme değildir.
+4. Mevcut önizleme ve giriş sınırı korunur: eski 42 test değiştirilmedi; tam Flutter test paketi 65/65 geçti.
+5. Flutter pub get, analyze, 65 test ve Android debug build: hepsi çıkış 0; yeniden bağlanan emulator-5554 üzerinde mevcut integration testi de 1/1 ve çıkış 0. Yeni görsel inceleme yapılmadı; DB kabulü bu Flutter kontrolleriyle karşılanmış sayılmaz.
+
+**Doğrulama:** `flutter pub get`, `flutter analyze`, `flutter test`, `flutter build apk --debug`; cihaz varsa `flutter test integration_test/app_smoke_test.dart -d CIHAZ_ID`. DB için `npx.cmd --yes supabase@2.119.0 start`, yalnız boş/sentetik yerel hedefte `db reset --local`, ardından `test db --local supabase/tests/database/identity_foundation_test.sql`.
+
+**4 Ekim 2026 devam kontrolü:** Mevcut dosyalar, Git durumu ve 3 Ekim komutlarının bitiş kayıtları yeniden okundu. Başarılı Flutter kontrollerinden sonra uygulama/test kodu değişmedi; kontroller tekrarlanmadı. Docker/Podman erişimi hâlâ yok. Migration/seed kabulü ve açık kararların durumu değişmedi.
+
+**Sonraki somut iş:** Docker uyumlu yerel ortamı kullanılabilir hale getirip ilk migration/seed/DB testini doğrulamak; şemayı etkileyen A-01–A-13 kararlarını netleştirerek kalan migrationları Faz 3 içinde tamamlamak. Faz 3 bitmedi; Faz 4'e geçilmez. Auth operasyon/saklama ayrıntıları A-14'te görünür tutulur.
+
+**4 Ekim kullanıcı yönlendirmesi:** Bu görevde Docker Desktop/Podman kurulmaz. Bağımsız statik SQL incelemesi ve CLI yardım doğrulaması tamamlandı; boş DB kurulumu, seed ve DB test kabulü **blocked by local Supabase runtime**. Kullanıcı ileride iki runtime'dan birini kurup başlattığında TESTING'deki açık yerel hedef komutları çalıştırılır. İstenen Flutter tekrar kontrolleri tamamlandı: pub get/analyze/build çıkış 0; 65/65 unit/widget ve emulator-5554 üzerinde 1/1 integration çıkış 0. Bunlar DB kabulünün yerine geçmez. Kaynak SQL ve iş kuralları değiştirilmedi.
 
 ## Her fazda kalite kapısı
 

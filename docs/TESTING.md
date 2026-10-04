@@ -1,10 +1,178 @@
 # Pekşen Gıda doğrulama ve test planı
 
-Kaynak: [Peksen_Gida_Teknik_Tasarim_v3.docx](Peksen_Gida_Teknik_Tasarim_v3.docx), özellikle §26–27, §33–37. Kayıt tarihi: 2 Ekim 2026; son durum kontrolü: 3 Ekim 2026.
+## Güncel sonuç — Faz 3 yedi P2 bütünlük düzeltmesi, 4 Ekim 2026
 
-Bu dosya Faz 1'de hazırlanmış, Faz 2'nin Flutter iskeleti ve testleriyle güncellenmiştir. Flutter projesi, `test/app_test.dart`, `integration_test/app_smoke_test.dart` ve `integration_test` SDK geliştirme bağımlılığı mevcuttur. Supabase migration/seed, gerçek Auth/RBAC/RLS ve iş modülleri henüz yoktur; bunlara ait aşağıdaki senaryolar **gelecekteki fazlar için plandır**. Komutun bu dosyada yer alması çalıştırıldığı veya başarılı olduğu anlamına gelmez. Gerçek komut sonuçları ve kabul durumu [PROGRESS.md](PROGRESS.md), SDK/paket seçimleri [DECISIONS.md](DECISIONS.md) T-01–T-06 içindedir.
+Üç migration ve iki değişmemiş seed boş yerel DB'ye başarıyla uygulandı. **Identity 19/19**, **business 140/140** (eski 97 assertion aynen + yeni 43 regresyon), **Flutter 65/65** başarılı. Tablo sayısı 35; yeni tablo, client grant veya RLS izin politikası yok. Yeni migration: `supabase/migrations/20261004000200_phase3_integrity_fixes.sql`.
 
-## 3 Ekim 2026 doğrulama durumu
+| Komut | Sonuç | Çıkış kodu |
+| --- | --- | --- |
+| `npx.cmd --yes supabase@2.119.0 db reset --local` | Üç migration + iki seed başarılı | 0 |
+| `npx.cmd --yes supabase@2.119.0 test db --local supabase/tests/database/identity_foundation_test.sql` | 19/19 PASS | 0 |
+| `npx.cmd --yes supabase@2.119.0 test db --local supabase/tests/database/business_foundation_test.sql` | 140/140 PASS | 0 |
+| `flutter analyze` | No issues found | 0 |
+| `flutter test --reporter expanded` | 65/65 geçti | 0 |
+| `flutter build apk --debug` | Built app-debug.apk | 0 |
+| `git diff --check` | Temiz | 0 |
+
+Her komutun son çıktısı/EXIT_CODE/bitiş zamanı `build/phase3-integrity-validation-20261004/` loglarında tutulur. İlk koşular başarılı; tekrar gerekmedi. JDK native-access uyarısı build'i başarısız yapmadı. APK normal debug uygulamasıdır; önceki integration runner çıktısı üzerinden başarı varsayılmadı. Çalıştırma önkoşulları ve CLI 2.119.0 yerel hedefi önceki bölümle aynıdır; reset üç migration'ı tarih sırasıyla uygular. Test fixture'ları rollback olur, seed dosyaları değişmez.
+
+### Eklenen regresyonlar
+
+| Bulgu | Negatif kontrol / korunması gereken geçerli davranış | Adet |
+| --- | --- | ---: |
+| 1 | Onaylı sayım kalemine ekleme/değiştirme/silme ve iki yönde taşıma reddi; bekleyen sayım düzenleme ve tam metadata ile onay kabulü | 7 |
+| 2 | Kapalı veya atama geçmişi olan seferde araç değişimi reddi; ended_at/flag temizlendikten sonra kilit sürer; ilk durak kilitler; kullanılmamış sefer ve aynı araç no-op kabulü | 9 |
+| 3 | False customer/driver, yanlış tür-bayrak ve finalization reddi; başarısız false olaydan sonra aynı slot/key ile gerçek customer olayı, geçerli driver/resolution kabulü | 10 |
+| 4 | Kalemin aynı veya farklı müşterinin başka siparişine taşınması reddi; aynı order_id no-op kabulü | 3 |
+| 5 | Eksik decided_by/decided_at ile approved/rejected ve doğrudan completed INSERT reddi; tam karar kabulü ve kanıtın sonra korunması | 7 |
+| 6 | Başka siparişe/self previous_stop_id reddi; aynı siparişin önceki durağı kabulü | 3 |
+| 7 | Başka ürünün sayımına veya stok hareketine dayanan düzeltme/telafi reddi; aynı ürün referansları kabulü | 4 |
+
+Negatif örnekler yanlış kısıta takılmayacak şekilde seçildi: önceki durak testlerinde aday kayıt kapalıdır (aktif-stop unique engeli devreye girmez); sipariş kalemi taşıma testinde iade FK'sı bulunmayan kalem kullanılır; true driver bayrağıyla finalization ayrıca sınanır. Eski 97 assertion'ın metni değiştirilmedi; dosya sonuna 43 kontrol eklendi. Korunan 31 dosyada SHA-256 farkı yoktur.
+
+**Bu turun sınırı:** Çok oturumlu yarış, yeni Android integration/görsel inceleme veya gerçek backend giriş testi yapılmadı. Sayım/araç trigger'larının satır kilitleri var; bu kayıt eşzamanlı transaction testi yapıldığını iddia etmez. Gerçek aktör yetkisi, çift onay akışı, sipariş/fiyat/stok/ödeme transaction'ları ve yeni iş formülü eklenmedi. R-01–R-07/A-14 açık; Faz 4 başlamadı. Faz 3 migration/seed/DB test kabulü korunuyor. Aşağıdaki 97 testli tablolar önceki koşuların tarihsel sonuçlarıdır.
+
+## Önceki Faz 3 kabulü — 4 Ekim 2026 onaylı iş şeması (97 test)
+
+**Migration/seed kabulü tamamlandı:** 25 kaynak + 10 yardımcı tablo boş yerel DB'ye kurulup sentetik kayıtlarla doğrulandı. Identity migration/seed/19 test korundu. Flutter kodu/testleri değişmeden kullanıcı tarafından istenen tekrar kontrolleri çalıştırıldı. Eski ortam blokajı geçerli değildir; aşağıdaki önceki görev sonuçları tarihçedir.
+
+| Komut | Bitiş sonucu | Çıkış |
+| --- | --- | --- |
+| `npx.cmd --yes supabase@2.119.0 db reset --local` | İki migration ve sıralı iki seed başarılı | 0 |
+| `npx.cmd --yes supabase@2.119.0 test db --local supabase/tests/database/identity_foundation_test.sql` | 19/19 PASS | 0 |
+| `npx.cmd --yes supabase@2.119.0 test db --local supabase/tests/database/business_foundation_test.sql` | 97/97 PASS | 0 |
+| `flutter pub get` | Bağımlılıklar çözüldü; lock değişmedi | 0 |
+| `flutter analyze` | No issues found | 0 |
+| `flutter test --reporter expanded` | 65/65 başarılı | 0 |
+| `flutter build apk --debug` | Built app-debug.apk | 0 |
+
+Loglar `build/phase3-expanded-validation-20261004/` altında, açık komut/başlangıç/bitiş/EXIT_CODE ile tutulur. İlk resetten sonra geçmiş koruma kısıtları genişletildiği için son reset yeniden yapıldı; iki DB testinin yukarıdaki sonuçları nihai migration'a aittir. DB/Flutter test başarısızlığı olmadı. PowerShell yardımcı scriptinin ilk execution-policy engeli Supabase komutuna ulaşmadı; sonraki süreçte `-ExecutionPolicy Bypass` kullanıldı, makine politikası değiştirilmedi. Pub sürüm bildirimi ve JDK native-access uyarısı komutları başarısız yapmadı.
+
+**APK:** `build/app/outputs/flutter-apk/app-debug.apk`, 231.252.001 bayt; bu koşunun normal uygulama build'i. Eski APK kopyaları korundu. Build kanıtı dosya varlığı değil komut bitişi/çıkış 0'dır. Bu tur Android integration, yeni görsel kontrol veya gerçek Supabase login yapılmadı. Önceki 1/1 emulator-5554 sonucu eski kayıt olarak kalır; yeni görsel kabul sayılmaz.
+
+### Yeni 97 DB testinin sınırı
+
+- 35 tablo envanteri, RLS/kapalı grant/policy yokluğu; orijinal sekiz profil korunması.
+- Tek depo, kategori/birim FK, exact dönüşüm; negatif/NaN/Infinity ve yanlış ürün birimi engeli.
+- Generated available/sayım farkı, hareket toplamlarıyla seed stok mutabakatı, fazla rezervasyon/overpick engeli.
+- Kalem fiyat/birim/iskonto/sabit miktar tutar snapshotı; katalog değişiminden bağımsızlık.
+- Altı kritik olay türünde tekrar operation_key, sonuçlanmış karar key'inin korunması; immutable hareket/fiyat/status/audit/confirmation/düzeltme yapısı.
+- Yanlış tahsilatı silme/ana tutarı değiştirme engeli, ayrı correction kaydı; actor/time/key zorunlulukları.
+- Driver tek başına finalizes_delivery olamaz; iki aktif stop engeli, kapatıp yeniden atama ve eski satır koruması.
+- Sipariş/müşteri/iade ilişkileri, tek 1–5 puan; belgeli ayar allowlist/tip/aralık ve sınırlı audit eylemleri.
+
+Bu testler şema ve kısıt kabulüdür. **Fazla ödeme için kalan borç hesabı, payment_status senkronizasyonu, sipariş toplamının kalemlerden otomatik üretimi, rezervasyon/picking transaction'ları, yetkili çift teslim onayı, kümülatif iade sınırı, iskonto/vade hesaplama ve eşzamanlı işlem yarışları henüz çalışmaz veya test edilmiş sayılmaz.** Bunlar Faz 5–13 işlem testleridir. Faz 4 için gerçek rol izinleri ve Auth; Faz 12/14 için GPS/push; gerçek cihaz/görsel kabul ayrıca gerekir. Açık formüller R-01–R-07'de kayıtlıdır.
+
+### Yeniden çalıştırma önkoşulları
+
+Depo kökü, Supabase CLI 2.119.0, çalışan Docker Desktop Linux motoru, config'teki yalnız sentetik `peksen_gida_phase3_local` hedefi. Servisler kapalıysa önce `npx.cmd --yes supabase@2.119.0 start`; bu görevde servisler zaten çalıştığından tekrar start yapılmadı. Reset gerçek veri olmayan yerel DB'yi yeniden oluşturur; yeni seed yolu config'te `seed.sql` ardından `seeds/business_foundation.sql` olarak tanımlıdır. Yukarıdaki üç DB komutu sırayla çalıştırılır; hata halinde sonraki adıma geçilmez. CLI start/status çıktısındaki credential'lar paylaşılmaz. Tam komutlar ve ayar sözleşmesi [supabase/README.md](../supabase/README.md) başındadır.
+
+## Önceki doğrulama kayıtları — tarihsel
+
+**Kesinti sonrası kontrol:** Aynı 4 Ekim görevine devam edilirken yukarıdaki logların gerçek bitişleri ve EXIT_CODE değerleri yeniden okundu; migration/seed/test dosyaları sonuçlardan daha yenisiyle değiştirilmemiştir. Korunan identity dosyalarının, pubspec.lock ve DOCX'in hash'leri aynı; `git diff --check` çıkış 0. Başarılı DB/Flutter komutları bu salt okunur devam kontrolünde yeniden çalıştırılmadı. Yukarıdaki başarılar onay paketinin bu görevde tamamlanan koşularıdır; yeni/ikinci koşu olarak sunulmaz.
+
+Kaynak: [Peksen_Gida_Teknik_Tasarim_v3.docx](Peksen_Gida_Teknik_Tasarim_v3.docx), özellikle §26–27, §33–37. Kayıt tarihi: 2 Ekim 2026; son durum kontrolü: 4 Ekim 2026.
+
+Bu dosya Faz 1–3 kayıtlarını içerir. Flutter iskeleti, mevcut 42 test ve Android smoke testi korunur. Faz 3'te client/config/auth-state hazırlığı, 23 yeni Flutter testi, ilk kullanıcı–müşteri migration/seed dilimi ve 19 pgTAP kontrolü eklendi. **4 Ekim yerel DB doğrulaması: migration/reset/seed başarılı, 19/19 pgTAP PASS.** Gerçek Auth/RBAC/RLS izin matrisi ve iş modülleri aşağıda gelecek faz planı olarak kalır. Komutun burada listelenmesi başarı kanıtı değildir. Gerçek sonuçlar [PROGRESS.md](PROGRESS.md), teknik seçimler [DECISIONS.md](DECISIONS.md) içindedir.
+
+## Faz 3 — 4 Ekim 2026, güncel yerel DB kabulü
+
+**`blocked by local Supabase runtime` engeli giderildi.** Kullanıcının açtığı Docker Desktop, Linux motoruyla doğrulandı (Docker 29.8.1, Compose v5.5.1; engine erişimi çıkış 0). Yeni ve yalnız sentetik `peksen_gida_phase3_local` hedefinde aşağıdaki komutlar tamamlandı:
+
+| Komut | Sonuç | Çıkış kodu |
+| --- | --- | --- |
+| `npx.cmd --yes supabase@2.119.0 start` | Yerel başlangıç başarılı | **0** |
+| `npx.cmd --yes supabase@2.119.0 db reset --local` | Boş DB, mevcut migration ve seed ile yeniden kuruldu | **0** |
+| `npx.cmd --yes supabase@2.119.0 test db --local supabase/tests/database/identity_foundation_test.sql` | **Files=1, Tests=19; Result: PASS** | **0** |
+
+19 kontrolün tamamı geçti: üç tablo, yedi rol, sekiz sentetik hesap/identity, iki müşteri/üyelik, kısıtlar ve kapalı istemci erişimi. `pgTAP already exists` NOTICE hata değildir. SQL/test dosyaları değiştirilmedi. Loglar `build/phase3-db-validation-20261004/` altında, bitiş çıkış kodlarıyla ve credential satırları maskelenmiş olarak tutulur. Bu görev yalnız DB doğrulamasıdır; Flutter komutları yeniden çalıştırılmadı, önceki 65/65 ve Android 1/1 kabulü korunur. Yeni görsel kontrol veya Flutter'dan gerçek giriş testi yapılmadı.
+
+**Faz 3 tamamlanmadı:** mevcut üç tablonun yerel kabulü tamamlandı; kaynak modeldeki diğer 22 tablo, eksik varlıklar ve iş örnekleri A-01–A-13 kararlarını bekliyor. DB temeli için runtime blokajı kapandı; kalan kapsam başarılı kabul edilmedi. Faz 4 başlamadı.
+
+Son belge tamamlama adımında mevcut loglardan üç komutun çıkış 0 sonucu ve `Files=1, Tests=19 / Result: PASS` yeniden teyit edildi; komutlar tekrar çalıştırılmadı. Bu kabul yalnız mevcut identity/customer temelini kapsar; iskonto/cari formülleri, stok rezervasyon zamanları, sipariş durumları, para hassasiyeti ve eksik tablo/FK kararlarına beklenen sonuç eklenmedi.
+
+## Faz 3 — 4 Ekim 2026, konteyner kurulmadan önceki doğrulama
+
+**Tarihsel DB kabul durumu: blocked by local Supabase runtime.** Bu bölüm runtime kurulmadan önceki görevi anlatır; güncel başarı tablosu yukarıdadır. O görevde kullanıcı kurulum istemediği için boş DB, seed ve 19 pgTAP kontrolü çalıştırılmadı. Docker/Podman olmadan yapılabilecek kontroller ve tekrar kurulum yönergeleri aşağıda korunur.
+
+| Kontrol | Docker/Podman olmadan durum |
+| --- | --- |
+| Migration/seed/test dosyalarının kaynakla ve birbirleriyle statik karşılaştırılması | Yapılabilir; aşağıdaki inceleme tamamlandı. SQL'in PostgreSQL tarafından kabul edildiği anlamına gelmez. |
+| Sabit CLI sürümünün `start --help`, `db reset --help`, `test db --help`, `db lint --help` komutları | Yapılabilir; 2.119.0 üzerinde dört komut da çıkış 0. Yardım çıktısı çalıştırma kanıtı değildir. |
+| Flutter pub get, analyze, unit/widget testleri, Android build | Supabase runtime gerektirmez. Yapılandırmasız uygulama SDK'yı başlatmaz; gerçek bağlantı sınanmaz. |
+| Android integration testi | Bağlı Android hedef ve SDK gerekir; mevcut önizleme testi Supabase runtime gerektirmez. Görsel inceleme değildir. |
+| `start`, `db reset --local`, `test db --local` | Bu yerel çalışma düzeninde runtime gerekir; çalıştırılmadı. Önceki start çıkış 1 kaydı korunur. |
+| `db lint --local` | Çalışan PostgreSQL üzerinde denetim yapar; bağımsız SQL dosya ayrıştırıcısı değildir. Çalıştırılmadı. |
+
+### Statik SQL incelemesi
+
+- Migration adı sürümlü ve benzersizdir. Enum tam yedi kaynak rolünü içerir; üç tablonun alanları SPEC §25 ile eşleşir. FK oluşturma sırası, UUID kullanımı, üyelik unique kısıtı, RLS açılması ve istemci grant'lerinin kaldırılması incelendi. İş akışı/formül veya izin veren policy eklenmedi.
+- Seed sırası Auth users → identities → profiles → customers → customer_users'dır. Sekiz benzersiz sentetik kullanıcı tüm rolleri, iki müşteri ve üyelik örneği müşteri ayrımını kapsar. `.invalid` e-postalar ve rastgele üretilen parola hash'leri kullanılır; gerçek sır yoktur. Migration/seed `begin`/`commit` ile çevrilidir; seed yalnız boş yerel DB için tasarlanmıştır.
+- pgTAP dosyasında `plan(19)` ile 19 assertion eşleşir: 3 tablo, 1 rol listesi, 5 kayıt/ilişki sayımı, 1 sentetik e-posta, 2 RLS/policy, 2 constraint ve 5 erişim reddi kontrolü. Test `begin`/`finish()`/`rollback` düzenindedir; rol değişimleri geri alınır. Dosya `supabase/tests/database/` altında keşfedilebilir.
+- Çalıştırma önkoşulları: Supabase'in yönettiği `auth.users`/`auth.identities`, `anon`/`authenticated` rolleri, `extensions` şeması, `pgcrypto` (`crypt`/`gen_salt`), pgTAP ve test bağlantısının extension oluşturma/rol değiştirme yetkisi. Bu sürümlerle çalışma uyumluluğu ve gerçek constraint/erişim sonucu runtime olmadan doğrulanamaz. Sıradan boş PostgreSQL veya Flutter testleri bu kabulün yerine geçmez.
+- Statik incelemede migration/seed SQL'ini değiştirmeyi gerektiren somut hata bulunmadı. Komutlarda hedef `--local`, test yolu `supabase/tests/database/identity_foundation_test.sql` olarak açıklaştırıldı. Statik kontrol bir DB PASS sonucu değildir.
+
+### Kullanıcının runtime kurduktan sonra çalıştıracağı komutlar
+
+Windows'ta **Docker Desktop** kurup Linux containers motorunu başlatın veya **Podman** kurup Podman machine'i başlatın. İkisinden biri yeterlidir. Seçilen motorun CLI'ı PATH'te ve Docker API uyumlu çalışma ortamı Supabase CLI tarafından erişilebilir olmalıdır. Node.js/npx bu bilgisayarda zaten mevcut; ilk container image indirmesi için ağ ve yeterli disk alanı gerekir. Bu projedeki API/DB/shadow DB portları 54321/54322/54320 başka süreçlerce kullanılmamalıdır. [Resmî yerel kurulum](https://supabase.com/docs/guides/local-development/cli/getting-started).
+
+PowerShell'de depo kökünde aşağıdaki bloğu çalıştırın. Her komuttan hemen sonra çıkış kodu denetlenir; hata olursa sonraki adıma geçilmez. `reset` yalnız `peksen_gida_phase3_local` projesinin yeniden üretilebilir sentetik yerel verilerini sıfırlamak içindir.
+
+```powershell
+Set-Location -LiteralPath 'D:\peksen_gida'
+npx.cmd --yes supabase@2.119.0 start
+if ($LASTEXITCODE -ne 0) { throw 'Supabase start başarısız; burada durun.' }
+npx.cmd --yes supabase@2.119.0 db reset --local
+if ($LASTEXITCODE -ne 0) { throw 'Migration/seed başarısız; burada durun.' }
+npx.cmd --yes supabase@2.119.0 test db --local supabase/tests/database/identity_foundation_test.sql
+if ($LASTEXITCODE -ne 0) { throw 'DB testleri başarısız; burada durun.' }
+```
+
+Beklenen kanıt: migration ve seed tamamlanması, test özetinde **19 test / PASS**, her adımın çıkış kodu **0**. `--no-seed` kullanılmaz; testler seed kayıtlarına bağımlıdır. `init` yeniden çalıştırılmaz; `login`, `link`, `db push`, `--linked` veya `--db-url` gerekmez. Start/status çıktısındaki yerel anahtarları depoya/sohbete kopyalamayın. Komut sözleşmesi [CLI test db](https://supabase.com/docs/reference/cli/supabase-test-db), reset sırası [seed belgeleri](https://supabase.com/docs/guides/local-development/seeding-your-database) ve [pgTAP test düzeni](https://supabase.com/docs/guides/database/testing) ile karşılaştırıldı.
+
+### 4 Ekim tekrar doğrulamasının sonucu
+
+`flutter pub get`: **0**; `flutter analyze`: **No issues found / 0**; `flutter test`: **65/65 / 0**; `flutter build apk --debug`: **Built app-debug.apk / 0** (30,0 s). `flutter devices` çıkış 0 ile emulator-5554'ü doğruladı; `flutter test integration_test/app_smoke_test.dart -d emulator-5554`: **1/1 / 0**. Testler ve uygulama kodu değiştirilmedi. Dört CLI yardım komutu ve PowerShell metin envanteri de çıkış 0 verdi; bunlar DB çalıştırması değildir.
+
+Kanıtlar `build/phase3-static-validation-20261004/` altındadır; tüm komutlar bitiş/çıkış koduyla kaydedildi. Normal APK integration öncesinde `build/app/outputs/flutter-apk/peksen-gida-phase3-20261004-debug.apk` adıyla korundu (**231.252.001 bayt**). Hash PROGRESS'tedir. JDK native-access uyarısı başarısızlığa yol açmadı. Yeni görsel kontrol veya gerçek backend bağlantısı yapılmadı. **DB testleri hâlâ çalıştırılmadı; Faz 3 tamamlanmadı.** Aşağıdaki bölümler önceki koşuların tarihsel kaydıdır.
+
+## Faz 3 — 3 Ekim 2026 doğrulaması
+
+4 Ekim devam kontrolünde aşağıdaki komutların gerçek log sonları ve çıkış kodları yeniden okundu. Uygulama/test kodu değişmediği için geçen kontroller tekrarlanmadı. Docker/Podman erişimi hâlâ yok; DB kontrolleri çalıştırılmış veya başarılı sayılmadı. Bu paragraf yeni bir Flutter test koşusu değildir.
+
+`flutter pub get` **0**, `flutter analyze` **0 / No issues found**, `flutter test` **65/65 / 0**, `flutter build apk --debug` **0 / Built app-debug.apk (18,5 s)**. Son Dart kodunda 42 mevcut test ile 23 yeni test birlikte geçti. İlk denemelerde bulunan test double/abonelik/SDK depolama yaşam döngüsü hataları düzeltildi; ara başarısız veya durdurulan koşular başarı sayılmaz. İlk build C:/D: Kotlin cache hatasıyla çıkış 1 verdi; `kotlin.incremental=false` düzeltmesi sonrası başarılı oldu.
+
+İlk `flutter devices` taramasında Android hedef yoktu; son taramada Flutter ve ADB çıkış 0 ile emulator-5554'ü doğruladı. `flutter test integration_test/app_smoke_test.dart -d emulator-5554` **1/1 / çıkış 0** ile tamamlandı (8 s). Yeni bağımlılıkla otomatik Android kontrolü yapıldı; bu görevde **görsel inceleme yapılmadı**. Supabase CLI init çıkış 0; start çıkış 1 (Docker/Podman yok). Migration/reset ve pgTAP çalıştırılmadı. Faz 3, DB ortamı ve kalan şema kararları nedeniyle tamamlanmış değildir.
+
+Normal APK testten önce `build/app/outputs/flutter-apk/peksen-gida-phase3-debug.apk` adıyla korundu: 202.242.805 bayt. Standart `app-debug.apk` integration runner çıktısıyla değişti; Faz 2 APK'sı ayrı tutuldu. Kanıt logları ve hash PROGRESS'tedir.
+
+### Yeni test kapsamı
+
+- `test/supabase_config_test.dart` (16): boş, eksik ve çakışan config; public/legacy anon anahtar; secret/service_role/bozuk key reddi; HTTPS/URL doğrulaması; yerel HTTP debug sınırı; değerleri yazdırmayan tanılama.
+- `test/auth_foundation_test.dart` (7): config yokken SDK çağrılmaması; eşzamanlı istemci okumasının tek başlangıcı paylaşması; gerçek SDK'nın ağsız/saklamasız başlangıcı; temizlenmiş hata; ilk session ve giriş/çıkış/error olayları; abonelik iptali; yükleniyor/hata durumunda preview; SDK hazırken girişin hâlâ kapalı olması. Widget testinde SDK isolate başlangıç/kapanışı gerçek async bölgede çalışır; ağ/auth başarısı taklit edilmez.
+- `supabase/tests/database/identity_foundation_test.sql` (19, **çalıştırılmadı**): temel tablolar, yedi rol, 8 Auth/profile/identity, iki kuruluş/üyelik, sentetik adresler, RLS açık/izin politikası yok, FK/tek kullanıcı kısıtı, anon/authenticated erişimin kapalı kalması. Faz 4'ün rol bazlı erişim testleri değildir.
+
+### Faz 3 çalıştırma düzeni
+
+```powershell
+flutter pub get
+flutter analyze
+flutter test
+flutter build apk --debug
+flutter devices
+# Yalnız bağlı Android hedef varsa:
+flutter test integration_test/app_smoke_test.dart -d CIHAZ_ID
+# Yalnız Docker uyumlu ortam hazırken, ayrılmış sentetik yerel hedefte:
+npx.cmd --yes supabase@2.119.0 start
+npx.cmd --yes supabase@2.119.0 db reset --local
+npx.cmd --yes supabase@2.119.0 test db --local supabase/tests/database/identity_foundation_test.sql
+```
+
+Şablonla ağsız çalıştırma: `flutter run --dart-define-from-file=.env.example -d CIHAZ_ID`. Gerçek geliştirme bağlantısı için ignore edilen `.env` kullanılır; URL ve yalnız bir public anahtar doldurulur. `.env` asset değildir, dosya kendiliğinden okunmaz. Client initialization bağlantı kontrolü sayılmaz. Gerçek URL/anahtar ile sunucu erişimi bu görevde denenmedi.
+
+DB detayları ve seed sınırları [supabase/README.md](../supabase/README.md) içindedir. A-01–A-13 çözülmeden para/stok/sipariş beklenen sonucu veya tam şema kabulü yazılmaz. Loglar `build/phase3-validation/` altındadır. Kalan manuel kontrol: yapılandırmasız/hatalı config debug durumunun Android'de görsel görünümü; bağımsız test backend'i hazır olduğunda public config ile başlangıç. Mevcut smoke testi geçti; giriş düğmesinin kapalı kalması korunur. Gerçek auth testi Faz 4'e aittir.
+
+## Faz 2 — 3 Ekim 2026 geçmiş doğrulama durumu
 
 Önceki çalışmanın `build/phase2-validation/` altındaki logları ve çıkış kodları okundu. Başarılı analyze, 42 test ve normal debug build yeniden çalıştırılmadı; uygulama/test kodu ve paketler değiştirilmedi. Yeniden bağlanan emulator-5554 üzerinde mevcut integration testi çalıştırıldı; ardından korunan normal APK yeniden derlenmeden ADB ile açılıp örnek ekranlar incelendi.
 
@@ -123,7 +291,7 @@ flutter run -d CIHAZ_ID
 flutter test integration_test/app_smoke_test.dart -d emulator-5554
 ```
 
-Hedefin kimliği farklıysa `flutter devices` çıktısı kullanılır. Geçen analyze, 42 unit/widget testi ve build kod/bağımlılık değişmedikçe tekrarlanmaz. Yeni test/build hatası düzeltilirse ilgili kontrol yeniden çalıştırılır. Bitiş çıktısı ve gerçek süreç çıkış kodu ayrı kaydedilir; yarım kalan komut veya APK'nın varlığı başarı değildir. Debug build çıktısı `build/app/outputs/flutter-apk/app-debug.apk` konumundadır; release build bu fazda çalıştırılmaz.
+Hedefin kimliği farklıysa `flutter devices` çıktısı kullanılır. Geçen analyze, güncel 65 unit/widget testi ve build kod/bağımlılık değişmedikçe veya kullanıcı tekrar istemedikçe tekrarlanmaz. 4 Ekim görevinde kullanıcı açıkça tekrar doğrulama istedi. Yeni test/build hatası düzeltilirse ilgili kontrol yeniden çalıştırılır. Bitiş çıktısı ve gerçek süreç çıkış kodu ayrı kaydedilir; yarım kalan komut veya APK'nın varlığı başarı değildir. Debug build çıktısı `build/app/outputs/flutter-apk/app-debug.apk` konumundadır; release build bu fazda çalıştırılmaz.
 
 ### Faz 2 mevcut unit/widget senaryoları
 
@@ -167,16 +335,15 @@ Görüntüler `build/phase2-validation/` altındadır; ayrıntılı gözlem list
 
 ### Supabase kabul komutları — Faz 3 ve sonrası
 
-CLI sürümü, yerel servisler, proje yapılandırması ve test altyapısı seçildikten sonra kesinleştirilecek komut taslağı:
+CLI 2.119.0 ile üç tablonun migration/seed kurulumu ve 19 DB testi **4 Ekim 2026'da doğrulandı**. Yerel runtime engeli kapandı. Tekrar çalıştırma gerektiğinde Docker Desktop veya Podman açıkken, yukarıdaki ayrıntılı önkoşullar sağlanarak ve her adımın çıkış kodu kontrol edilerek:
 
 ```powershell
-supabase start
-supabase status
-supabase db reset --local
-supabase test db
+npx.cmd --yes supabase@2.119.0 start
+npx.cmd --yes supabase@2.119.0 db reset --local
+npx.cmd --yes supabase@2.119.0 test db --local supabase/tests/database/identity_foundation_test.sql
 ```
 
-`supabase db reset --local`, **yalnızca bu proje için ayrılmış, yeniden oluşturulabilir sentetik yerel test veritabanında** boş veritabanından migration+seed kurulumunu doğrulamak içindir. Veri içeren mevcut veya canlı ortama uygulanmaz; önce hedef ve veri niteliği doğrulanır. Bu tur çalıştırılmaz. `supabase test db`, uygun SQL test altyapısı/test dosyaları eklendikten ve seçilen CLI ile doğrulandıktan sonra kullanılır; şu an mevcut çalışan test paketi olduğu iddia edilmez. RLS testleri ayrı kullanıcı kimlikleriyle yapılır; yalnızca ayrıcalıklı bağlantıyla çalıştırılmış SQL, müşteri veya çalışan erişiminin güvenli olduğunu kanıtlamaz.
+`db reset --local`, **yalnızca bu proje için ayrılmış, yeniden oluşturulabilir sentetik yerel test veritabanında** boş DB'den migration+seed kurulumunu doğrular. Veri içeren mevcut/canlı ortama uygulanmaz; hedef ve veri niteliği önce doğrulanır. Son görevde reset/test çıkış 0 ile tamamlandı. Mevcut 19 test kapalı temel erişimini kapsar; ileride rol bazlı RLS testleri ayrı kullanıcı kimlikleriyle yapılır. Bu kapalı temel testi Faz 4 izin matrisi kabulü değildir. CLI status çıktısı ayrıcalıklı yerel anahtarlar içerebilir; depoya/sohbete kopyalanmaz.
 
 ### Faz 1 belge doğrulaması — tarihi kontrol listesi
 

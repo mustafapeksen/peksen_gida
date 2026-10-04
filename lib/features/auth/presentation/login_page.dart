@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../../shared/widgets/preview_notice.dart';
+import 'backend_status.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key, required this.previewEnabled});
@@ -182,6 +183,8 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                   ),
                   if (widget.previewEnabled) ...[
+                    const SizedBox(height: 16),
+                    const BackendStatus(),
                     const SizedBox(height: 24),
                     const PreviewNotice(),
                     const SizedBox(height: 12),

@@ -1,8 +1,12 @@
 # Pekşen Gıda — Karar kaydı
 
+**Son bütünlük düzeltmesi (4 Ekim 2026):** Kullanıcının kapanış incelemesindeki yedi P2 bulguyu düzeltme talebi T-13 kapsamında uygulandı. Onaylı B-01–B-09 iş kuralları ve R-01–R-07 açık kararları değiştirilmedi. Yeni migration eski dosyalara dokunmadan korumaları güçlendirir; business DB paketi artık 140 testtir (97 eski + 43 regresyon).
+
+**Güncel karar önceliği (4 Ekim 2026):** Kullanıcının B-01–B-09 onayları aşağıdaki eski kaynak kararlarını gerektiği yerde değiştirir. K-05/A-02'deki yalnız uyarıyla devam, A-03'teki belirsiz stok düşüm anı, K-09/A-13'teki driver tahsilat sınırı ve K-10/K-15'te yalnız Manager çözümü güncel uygulama kuralı değildir. Kaynak ve eski soru metinleri izlenebilirlik için korunmuştur; güncel cevaplar ve kalan sorular bu dosyanın sonundadır. DOCX değiştirilmez.
+
 Kayıt tarihi: **2026-10-02** (Europe/Istanbul). Kaynak: [Pekşen Gıda Teknik Tasarım ve Codex Geliştirme Planı v3](Peksen_Gida_Teknik_Tasarim_v3.docx), revizyon tarihi 1 Ekim 2026. Bölüm numaraları kaynak DOCX'e aittir.
 
-Bu kayıt Faz 1'de hazırlanmış, Faz 2'de iskeletin teknik kararlarıyla genişletilmiştir. Kaynakta karara bağlanmış kurallar ile henüz cevaplanmamış sorular ayrılmıştır. Açık maddeler onaylanmış varsayım değildir; formül, eşik yorumu, yeni rol veya durum geçişi seçilmemiştir. İş kurallarının tamamı [SPEC.md](SPEC.md), fazlar ve kabul ölçütleri [PLAN.md](PLAN.md) içindedir.
+Bu kayıt Faz 1'de hazırlanmış, Faz 2'de iskeletin ve Faz 3'te config/client ile ilk migration/seed diliminin teknik kararlarıyla genişletilmiştir. Kaynakta karara bağlanmış kurallar ile henüz cevaplanmamış sorular ayrılmıştır. Açık maddeler onaylanmış varsayım değildir; formül, eşik yorumu, yeni rol veya durum geçişi seçilmemiştir. İş kurallarının tamamı [SPEC.md](SPEC.md), fazlar ve kabul ölçütleri [PLAN.md](PLAN.md) içindedir.
 
 Kaynak §37 uyarınca ilgili iş kuralını uygulayan faz başlamadan karar kaydı tamamlanır. İlgili karardan bağımsız iskelet ve ekran hazırlığı ilerleyebilir. Faz 1'in tamamlanması, aşağıdaki soruların cevaplandığı veya uygulamanın hazır olduğu anlamına gelmez.
 
@@ -87,9 +91,47 @@ Aşağıdaki kararların tarihi **2026-10-02**, kapsamı **Faz 2 arayüz iskelet
 - **Sınır:** Menü bağlantıları yalnız açıklayıcı ekran kabuklarıdır. Gerçek ürün, sipariş, stok, cari, tahsilat, GPS ve bildirim işlemleri yoktur. Tema ticari marka onayı, widget testi ise bütün Android cihazlarda görsel kabul anlamına gelmez.
 - **Durum / etki:** Kabul edildi — teknik uygulama kararı; Faz 2 ve sonraki arayüz görevleri.
 
+## Faz 3 teknik kararları — 3 Ekim 2026
+
+### T-07 — Faz sınırı ve güvenli istemci yapılandırması
+
+- **Karar:** PLAN/SPEC §33'te Faz 3 `Supabase migrations + seed`, Faz 4 `Auth + RBAC + RLS`dir. Kullanıcının Faz 3 talebindeki env/client/auth-state hazırlığı uygulanır; gerçek giriş, signup, rol yönlendirmesi ve izin veren RLS politikaları uygulanmaz.
+- **Yapılandırma:** Flutter SDK'nın `--dart-define-from-file=.env` desteği kullanılır; dosya asset değildir. `SUPABASE_URL` ve yalnız bir `SUPABASE_PUBLISHABLE_KEY` veya eski `SUPABASE_ANON_KEY` alınır. Tamamen boş yapılandırma ağsız önizlemedir; eksik/çakışan değer hata durumudur. HTTPS gerekir; debug modunda yalnız localhost, 127.0.0.1, ::1 ve Android host köprüsü 10.0.2.2 için HTTP kabul edilir.
+- **Sınır:** Secret/service_role ve bozuk anahtar biçimleri reddedilir. Eski JWT'de `role=anon` kontrolü yalnız yanlış anahtar kullanımını önler; imza/anahtar doğrulaması veya yetki kanıtı değildir. Build-time değerler APK'dan çıkarılabilir; gerçek sır bu mekanizmaya verilmez. Hata/config tanılamaları değerleri yazdırmaz. Gerçek proje değeri eklenmedi.
+- **Bağımlılık:** Kararlı `supabase_flutter: 2.18.0` ve lockfile çözümü seçildi; Riverpod/go_router değişmedi. [Paket kaynağı](https://pub.dev/packages/supabase_flutter/versions/2.18.0), [SDK başlangıcı](https://supabase.com/docs/reference/dart/initializing).
+
+### T-08 — Client başlangıcı ve yalnız oturum gözlemi
+
+- **Karar:** Uygulama kapsamındaki Riverpod FutureProvider tek başlangıcı paylaşır. Config yokken SDK çağrılmaz; yükleme/hata önizlemeyi engellemez. Giriş ekranı gerçek gönderimi kapalı tutar. AuthRepository yalnız ilk session snapshot'ını ve sonraki SDK olaylarını izler; token, parola veya iş rolünü UI modeline taşımaz. Abonelik iptal edilince SDK dinleyicisi kapatılır. Session görünmesi yetki veya veritabanı rolü sağlamaz.
+- **Saklama:** Faz 3'te `EmptyLocalStorage`, `persistSession=false`, `autoRefreshToken=false`, `detectSessionInUri=false` kullanılır. SDK'nın oturum saklama kapalıyken de açtığı varsayılan PKCE preferences depolaması kullanılmaz; PKCE yazması hata verir. Kalıcı oturum, code exchange ve yenileme Faz 4 hazırlığında A-14 ile ele alınır.
+- **Hata:** SDK ayrıntıları UI/log'a taşınmadan sabit Türkçe hata üretilir. Sabit build yapılandırmasının hatasında otomatik sonsuz yeniden deneme yapılmaz. “İstemci hazır” server bağlantısı veya auth doğrulaması değildir. Router ve debug önizleme sınırı korunur.
+- **Kaynak:** [Auth olayları](https://supabase.com/docs/reference/dart/auth-onauthstatechange), [SDK saklama seçenekleri](https://pub.dev/packages/supabase_flutter/versions/2.18.0). Bu teknik hazırlık Faz 4 kabulünü karşılamaz.
+
+### T-09 — Karardan bağımsız migration ve seed dilimi
+
+- **Karar:** Yedi değerli `app_role`, SPEC §25'teki `profiles`, `customers`, `customer_users` için ilk sürümlü migration hazırlandı. UUID PK/FK kullanılır; `profiles.id` Auth kullanıcısına bağlıdır. Müşteri kuruluşu başına tek kullanıcı `unique(customer_id)` ile korunur; üyelik tablosu ileriki genişleme için kalır. Silme cascade'i eklenmez. ID/rol/ad/firma adı ve active zorunludur; kalan kaynak metin alanları bu temelde nullable'dır, iş validasyonu icat edilmez. `active` başlangıcı true'dur; signup/çalışan oluşturma veya üyelik atama işlemi yoktur.
+- **Geçici kapalı erişim:** Üç tabloda RLS açılır, public/anon/authenticated grant'leri geri alınır, izin veren policy yazılmaz. Bu, hazırlık verisini kapalı tutar; Faz 4 rol izin matrisi değildir. `user_metadata.role` otomatik profile rolüne dönüştürülmez. Müşteri üyeliği oluşturma/değiştirme denetimi A-14/Faz 4'te kalır.
+- **Seed:** Yedi rol için sekiz sentetik Auth/profile/email-identity kaydı (iki customer), iki kuruluş ve iki üyelik. Yalnız `.invalid` e-posta alanı; her hesaba seed sırasında rastgele parola hash'i, kullanılabilir parola çıktı/depoda yok. Login testi iddiası yoktur. Seed yalnız boş, yeniden oluşturulabilir yerel ortam içindir; doğrudan tekrar çalıştırma idempotent değildir, `db reset --local` düzeni kullanılır.
+- **Araç/hedef:** `npx.cmd --yes supabase@2.119.0`; PostgreSQL 17, `peksen_gida_phase3_local`. Başlangıçtaki konteyner engeli 4 Ekim 2026'da giderildi: Docker Desktop Linux motorunda local start ve db reset çıkış 0; migration/seed uygulandı, 19/19 pgTAP PASS ve çıkış 0. Canlı proje linki ve migrationı yapılmadı. Kanıtlar `build/phase3-db-validation-20261004/` altında; bu başarı yalnız üç tabloluk dilimi doğrular.
+- **Ertelenenler:** Diğer 22 kaynak tablosu ve eksik varlıklar için A-01–A-13 bağımlılıkları sürer. Özellikle ürün/fiyat/para hassasiyeti, sipariş snapshot/durum, stok gösterimi, ödeme ve GPS şeması yazılmadı. Bu küçük dilim tam Faz 3 tamamlandı anlamına gelmez. A-01–A-13 kapanmaz.
+
+### T-10 — Windows üzerinde Kotlin derleme uyumluluğu
+
+- **Gözlem:** Yeni SDK'nın transitif Android plugin'leri ilk build'de `this and base files have different roots` hatası verdi; Pub cache C: sürücüsünde, depo D: sürücüsündedir. Hata url_launcher_android/shared_preferences_android Kotlin incremental cache kapanışındadır; ilk build çıkış 1.
+- **Karar:** `android/gradle.properties` içine `kotlin.incremental=false` eklendi. SDK/Kotlin sürümleri veya global Pub cache taşınmadı, mevcut build kayıtları silinmedi. Bedeli Kotlin derlemesinin daha yavaş olabilmesidir. Aynı sürücü/upstream düzeltmesi doğrulanınca bu geçici ayar kaldırılabilir. [Kotlin derleme ve cache belgeleri](https://kotlinlang.org/docs/gradle-compilation-and-caches.html).
+- **Doğrulama:** Son build sonucu PROGRESS'te tutulur; ayarın varlığı başarı kanıtı değildir.
+
+### T-11 — Runtime olmadan doğrulama sınırı ve yerel test hedefi
+
+- **İlk kayıt / karar:** 2026-10-04, runtime kurulmadan önceki görev. Kullanıcı o aşamada Docker Desktop/Podman kurulmasını istemedi; statik inceleme yapılıp veritabanı çalıştırma kabulü **blocked by local Supabase runtime** olarak kaydedildi. Uzak DB'ye bağlanarak veya sahte Auth şemasıyla kabul tamamlanmış gösterilmedi.
+- **Komut:** CLI 2.119.0 `--help` çıktısında `db reset --local` ve `test db --local [path]` destekleniyor. Hedefi açık tutmak için test komutu `test db --local supabase/tests/database/identity_foundation_test.sql` olarak belgelenir; reset seed'i atlamaz. Her komutun çıkış kodu hemen kontrol edilir.
+- **Sınır:** `db lint --local` çalışan veritabanı gerektirir; SQL dosyalarını runtime olmadan doğruladığı iddia edilmez. Docker Desktop (Linux containers) veya Podman (çalışan machine) kurulup başlatıldıktan sonra mevcut yerel komutlar denenir. İş kuralları, migration ve seed değiştirilmedi. Açık şema kararları kapanmadı.
+- **Kaynak:** [CLI test sözleşmesi](https://supabase.com/docs/reference/cli/supabase-test-db), [yerel runtime önkoşulları](https://supabase.com/docs/guides/local-development/cli/getting-started), [seed sırası](https://supabase.com/docs/guides/local-development/seeding-your-database); kurulu sürümün yardım logları `build/phase3-static-validation-20261004/` altında.
+- **4 Ekim sonraki doğrulama:** Kullanıcı Docker Desktop'ı açtıktan sonra yerel start/reset/test komutları çalıştırıldı; üçünün çıkışı 0, DB testi 19/19 PASS. Runtime engeli kapandı. Migration/seed/test kodu değiştirilmedi; kalan 22 tablo ve A-01–A-13 açık şema kararları kapanmadı. A-14'teki auth/üyelik operasyonları ve Faz 4 bu kabulün dışında kalır. Son devam adımında yalnız kayıtlar güncellendi; başarılı komutlar tekrarlanmadı.
+
 ## Açık kararlar
 
-Bu bölümdeki tüm maddeler için tarih **2026-10-02**, durum **Açık — karar verilmedi; uygulama varsayımı yapılmadı**dır. İş kuralı kararları kullanıcı tarafından netleştirilir; şema ve teknik kararlar kaynak kapsamına uygun gerekçeyle kaydedilir. Her madde aşağıda özel kaynağını, neden gerekli olduğunu ve etkilediği fazları belirtir.
+A-01–A-13 maddelerinin kayıt tarihi **2026-10-02**, A-14'ün kayıt tarihi **2026-10-03**; durumları **Açık — karar verilmedi; uygulama varsayımı yapılmadı**dır. İş kuralı kararları kullanıcı tarafından netleştirilir; şema ve teknik kararlar kaynak kapsamına uygun gerekçeyle kaydedilir. Her madde aşağıda özel kaynağını, neden gerekli olduğunu ve etkilediği fazları belirtir.
 
 ### A-01 — İskonto performansı ve eşik anlamı
 
@@ -143,7 +185,7 @@ Bu bölümdeki tüm maddeler için tarih **2026-10-02**, durum **Açık — kara
 - **Gerekçe:** §25'te referans alanlar/iş ihtiyaçları vardır ancak başvurulan bütün varlıklar tanımlı değildir; bu liste uygulanmaya hazır tam migration değildir. §15 ile §32'nin model hazırlığına ilişkin farklı kesinlikteki ifadeleri sessizce tek bir zorunluluğa dönüştürülemez.
 - **Kaynak:** §3, §15, §25, §31–32, §37 (veri modeli).
 - **Etkilediği fazlar:** 3–4, 5, 8–9, 11, 14, 16.
-- **Durum:** Açık; yeni tablo veya FK tasarımı bu fazda uygulanmadı.
+- **Durum:** Açık; bu maddede listelenen eksik varlıkların tablo/FK tasarımı uygulanmadı. T-09'daki bağımsız kullanıcı–müşteri temeli bu soruları kapatmaz.
 
 ### A-07 — Fiyat snapshot alan adları
 
@@ -208,8 +250,120 @@ Bu bölümdeki tüm maddeler için tarih **2026-10-02**, durum **Açık — kara
 - **Etkilediği fazlar:** 3–4, 7, 10–13, 16.
 - **Durum:** Açık; yeni yetki verilmedi.
 
+### A-14 — Auth başlangıcı sonrasında üyelik ve oturum ayrıntıları
+
+- **Tarih / durum:** 2026-10-03; açık, Faz 4'e başlanmadı.
+- **Sorular:** Kullanıcı–kuruluş üyeliğinin oluşturulması/değiştirilmesi hangi transaction ile yürütülecek? Bir kullanıcının birden fazla kuruluş ilişkisi, inactive üyelik geçişleri ve hesap silme/saklama kuralları nedir? Kalıcı mobil oturum saklaması, yenileme, çıkış/iptal ve gerçek e-posta doğrulama/davet ayarları nasıl uygulanacak?
+- **Korunan karar:** Kuruluş başına MVP tek kullanıcı, müşteri kayıt sonrası doğrudan aktif, çalışanı Owner/Manager oluşturur, roller DB'dedir. E-posta doğrulamasıyla işletme aktifliği sessizce eşitlenmez. Client metadata'sından yetki türetilmez.
+- **Etki:** Şimdiki temel kayıt yapısı bu operasyonları sağlamaz; yerel signup hazırlık boyunca kapalıdır. Gerçek giriş, güvenli oturum ve üyelik denetimi Faz 4 kabulü altında tamamlanır. A-05/A-13 rol soruları ayrıca açık kalır.
+
 ## Kararların kapatılması ve sonraki adım
 
 Bir açık madde kapatılırken ID korunur; kararın tarihi, kesin cevabı, gerekçesi, kaynak etkisi, gerekiyorsa reddedilen seçenekleri ve etkilediği kabul ölçütleri kaydedilir. Sonra SPEC/PLAN/TESTING/PROGRESS birlikte tutarlı hale getirilir. DOCX ve Markdown farklılaşırsa fark kullanıcıya bildirilip burada kaydedilir; kaynak sessizce düzeltilmez (§35–36).
 
 Faz 2'nin iskelet, tema, routing, ortak giriş/yükleniyor/boş/hata durumları ve yedi rol menüsü bu formülleri seçmeden hazırlanabilir. Şema, RLS, fiyat, sipariş, rezervasyon, ödeme ve GPS uygulaması ise ilgili açık maddeler çözülmeden tamamlandı kabul edilemez.
+
+## 4 Ekim 2026 — kullanıcı tarafından onaylanan iş kararları
+
+Kaynak: kullanıcının bu görevde eklediği “Faz 3 açık iş kararları aşağıdaki şekilde onaylandı” metni. B-01–B-09 **onaylı iş kararıdır**; T-12 bunları taşıyan teknik şema seçimidir. Bu onay gerçek iş servislerini Faz 3'e taşımaz: PLAN'daki Faz 3 migration/seed kabulü ile sonraki fazların işlem/izin kabulü ayrıdır.
+
+### B-01 — Sipariş, rezervasyon ve onay
+
+Normal sipariş `submitted` olur ve rezervasyon yapar. Cari limit aşımı, yetersiz stok veya özel/riskli sipariş Manager/Owner onayına gider; onaydan sonra `submitted`, ret halinde `rejected` olur. Draft ve rejected rezervasyon üretmez. Customer/Sales Operator submitted siparişi iptal edebilir; picking ve sonrası iptal Manager/Owner onayı ister. Delivered sonrası iptal yerine iade/uyuşmazlık vardır. Alternatif teklif asıl kalemi doğrudan değiştirmez; ürün/miktar değişimi müşteri onayı gerektirir. Operasyon durumu `orders.status`, ödeme görünümü `payment_status` olarak ayrılır; ödeme kayıtları esas, payment_status senkron önbellektir.
+
+**Kaynak revizyonu:** K-05/A-02'nin uyarı sonrası müşteri tercihiyle koşulsuz devam davranışı yerine yönetici kararı gerekir. Eski `pending_operator_review/confirmed/preparing/ready_for_dispatch` adları teknik şemada `pending_approval/submitted/picking/picked` olarak karşılanır; `assigned` eklenir, `loaded` ve teslimat onayı/uyuşmazlığı korunur. Ödeme ve iptal/alternatif talepleri ana status dışında tutulur. Bu ad eşlemesi tam geçiş matrisi değildir.
+
+### B-02 — Stok
+
+`available_qty = physical_qty - reserved_qty`. Submitted rezervi artırır; picked fiziksel ve rezerve miktarı aynı taban miktar kadar azaltır, kalemin `picked_qty` değerini ve hareket geçmişini artırır. Kısmi picking vardır; picked satış miktarı sipariş miktarını aşamaz. İptal/iade/depoya dönüş telafi hareketi üretir. Depocunun sayım farkı Manager/Owner onayından sonra hareketle uygulanır. Kaynaktaki fiziksel düşüm zamanı bu açık onayla picked olarak kesinleşmiştir.
+
+### B-03 — Cari, tahsilat ve vade
+
+Gerçek borç müşteri onaylı teslimatta veya teslimatı kesinleştiren Manager/Owner çözümünde oluşur; tek driver girişi yeterli değildir. Tahsilat girildiğinde borç düşer. Tahsilat durumları `recorded`, `verified`, `disputed`, `cancelled`; yanlış kayıt silinmez, düzeltme/telafi eklenir. Kısmi ödeme kabul, ilgili siparişin kalan borcundan fazla ödeme ret edilir. Genel avans/alacak bakiyesi yoktur.
+
+Cari limit kontrolündeki projected exposure, teslim edilmiş ödenmemiş borç ile `submitted/picking/picked/assigned/out_for_delivery` siparişlerin beklenen tutarlarını kapsar; kesin borç değildir. Aşım Manager/Owner onayı/ret ve audit/history üretir. `customers.payment_due_days` nullable müşteri özel vadesidir; yoksa sistem varsayılanı kullanılır. `due_date = delivered_at + seçilen payment_due_days`; vadesi geçmiş ve kapanmamış borç `overdue` olur. Varsayılan gün sayısı ve cari limit hesap formülü **onayda yoktur**, seed'e yazılmaz.
+
+### B-04 — Takvim çeyreği iskontosu
+
+Q1 Ocak–Mart, Q2 Nisan–Haziran, Q3 Temmuz–Eylül, Q4 Ekim–Aralık kullanılır. Müşteri onaylı teslim edilmiş siparişlerin iadeden arındırılmış net toplam tutarı eşik ölçüsüdür. İade miktarı/tutarı düşülür; teslim edilmemiş, cancelled, rejected veya tamamen iade edilmiş siparişler hariçtir. Ödenmiş olma şartı, kategori/miktar iskontosu yoktur. Çeyrek sonunda öneri oluşturulur; Manager/Owner onayından sonra customer_pricing'e yazılır ve sonraki çeyrekte uygulanır. Sessiz otomatik fiyat değişimi yoktur. Sipariş fiyat/iskonto snapshotları sonraki iskonto değişiminden etkilenmez. Eski haftalık/üç aylık belirsizlik bu takvim/toplam kararıyla değiştirilmiştir.
+
+### B-05 — Para ve snapshot
+
+Tüm para integer kuruştur; alanlarda `_kurus` son eki kullanılır. Float/double yoktur. Yuvarlama kalem toplamında yapılır, sipariş toplamı yuvarlanmış kalemlerin toplamıdır. Kanonik kalem alanları `unit_price_kurus`, `discount_rate_snapshot`, `final_unit_price_kurus`, `line_total_kurus` olur; hepsi sipariş anının snapshotıdır. İskonto oranı para değildir. Kuruşun altında kalan final birim fiyatının temsili ve eşit uzaklıktaki yuvarlama yönü onaylanmadı; hesaplayıcı yazılmaz.
+
+### B-06 — Sefer ve teslimat
+
+Bir sipariş aynı anda tek sefer/araca bağlıdır; kalem bölme yoktur. Eski atama kapanır, yeni atama geçmişe bağlanır; iki aktif stop yasaktır. Primary ve assistant driver teslimat, tahsilat girişi ve teslimat onayı başlatabilir; gerçek aktör kaydedilir, primary sadece varsayılan sorumludur. Bu karar K-09/A-13'teki önceki driver tahsilat sınırını genişletir. Normal tamamlanma driver girişi + müşteri onayıdır; eksik/ret/uyuşmazlık Manager **veya Owner** çözümündedir. GPS yalnız Faz 12 iskeletidir; konum takibi, saklama/izin/sağlayıcı ve konuma bağlı iş kuralı bu faza eklenmez.
+
+### B-07 — Kategori, ürün fiyatı ve birim
+
+Ürün tek kategori FK'sına bağlıdır. Güncel fiyat products üzerindedir; ayrı product_price_history eski/yeni kuruş, aktör, zaman ve gerekçe tutar. Audit bunun yerine geçmez. Her ürünün taban stok birimi ve product_units satış birimleri/dönüşümleri bulunur. Sipariş miktarı integer, taban stok etkisi dönüşüm katsayısıyladır. Float katsayı yoktur; güvenli decimal veya oran gösterimine izin verilmiştir.
+
+### B-08 — Yardımcı kayıtlar ve kapsam
+
+Notifications yalnız iskelettir; cihaz tokenı tutulmaz. Push, Firebase/APNs, tekrar gönderme Faz 10/sonrası içindir; PLAN'daki FCM Faz 14 işi başlatılmaz. Audit yalnız fiyat, stok/sayım onayı, sipariş durumu, alternatif kabul/ret, tahsilat ekleme/düzeltme/iptal, cari onay/ret, teslimat uyuşmazlığı/çözümü ve rol/yetki değişimidir. Kaynağın daha geniş audit örnekleri bu izin listesine sessizce eklenmez. app_settings JSON key/value, izinli anahtar ve belgeli tip/aralık kullanır. Ticari eşik gömülmez. Tek depo referansı kullanılır; inventory/count/movement warehouse FK taşır. Araç plaka/aktiflik/açıklama kaydıdır; her sefer tek araç FK'sı taşır.
+
+### B-09 — İşlem tekrarı
+
+Stok hareketi, tahsilat, teslimat onayı, durum geçişi, fiyat değişikliği ve cari limit kararı operation_key gerektirir. Aynı anahtarla aynı kritik işlem iki kez kaydedilemez. Veritabanı kısıtı zorunludur; buton kilidi yeterli değildir.
+
+### T-12 — Onaylı kararların Faz 3 şema karşılığı
+
+- **Sürümleme:** İlk identity migration, seed ve 19 test korunur. Yeni `20261004000100_business_foundation.sql` 22 kaynak tablo + 10 yardımcı tablo kurar; customers'a nullable credit_limit_kurus/payment_due_days ekler. Toplam 35 public tablo. Yeni seed, config'te identity seed'inden sonra çalışır. Flutter kodu/dependency değiştirilmez.
+- **Para/birim:** Para bigint; oran exact numeric 0–1; taban stok/dönüşüm sınırsız ölçekli exact numeric ve sonlu/nonnegative kontrolü kullanır. Sipariş/picked miktarı integer satış birimidir; conversion snapshot geçmiş stok etkisini korur. Sonsuz/NaN ve sıfır dönüşüm reddedilir. Ticari hassasiyet/yuvarlama uygulanmaz.
+- **Şema sınırı:** DDL, FK, check/unique, üretilen stok/sayım farkı ve geçmiş koruma trigger'ları vardır. Sipariş oluşturma/rezervasyon/picking, borç/exposure/vade hesaplama, fazla ödeme denetleyen kilitli transaction, payment_status senkronizasyonu, çeyrek önerisi veya audit otomasyonu **yoktur**. Bunlar Faz 5–13 işlemleridir; ileride bu garantileri sağlayan tek backend transaction ile yazılmalıdır. Mevcut tüm tablolar RLS açık ve anon/authenticated/PUBLIC grant kapalıdır; izin veren policy/RPC eklenmedi.
+- **Tekrar koruması:** Her kritik kayıt türünde UUID `operation_key` NOT NULL UNIQUE; bekleyen kararların key'i yoktur, sonuçlanan kararda zorunlu ve sabittir. Anahtar kapsamı tablo/eylem türüdür. Aynı iş transaction'ı farklı türlerde aynı correlation key'i kullanabilir; tek türde çok satırlı iş için her alt işleme kararlı ayrı key gerekir. Tekrar INSERT 23505 ile reddedilir; otomatik başarılı replay yanıtı üretilmez. Retention/TTL silmesi yoktur. Değişmiş payload ve sonuç döndürme API sözleşmesi R-06'dır.
+- **Geçmiş:** Stok/fiyat/status/audit/teslimat olayları ve tahsilat düzeltmeleri append-only'dir. Tahsilatın tutarı, siparişi, aktörü, yöntemi, zamanı ve key'i değiştirilemez/silinemez. Tamamlanmış kararlar immutable'dır. Kapalı atamalar değiştirilemez, hiçbir atama silinmez; yeni atama eski satıra bağlanır. Kalem fiyat/oran/birim snapshotı yerinde değişmez; aynı miktarın satır tutarı da yeniden fiyatlanamaz. Gelecek onaylı kalem revizyonunun temsil ayrıntısı R-03'te kalır.
+- **Durum adları:** `order_state` domain'i yalnız bilinen operasyon adlarını sınırlar; geçiş yetkisi/matrisi uygulamaz. Payment cache adları `not_due/unpaid/partial/paid/overdue/disputed`; tahsilat verification_status değerlerinden ayrıdır. Sefer/durak status alanlarının tam sözlüğü R-03 nedeniyle text iskeletidir; yeni davranış varsayılmaz.
+- **Yardımcı tablolar:** categories, warehouses, vehicles, product_price_history, pricing_proposals, order_approvals, order_change_requests, order_returns, order_return_items, payment_adjustments. Return kalemi composite FK ile aynı siparişe bağlıdır; kümülatif iade miktarı/tutarı işlemin kilitli kontrolünü gerektirir. Ayrı cari ledger veya genel müşteri avansı icat edilmedi.
+- **Teslimat olayı:** delivery_confirmations append-only driver/customer/dispute/resolution olaylarıdır. Aktör/key her olayda vardır; driver olayı finalizes_delivery olamaz. Müşteri onayı ve Manager/Owner çözüm yetkisi, atanmış driver kontrolü ve çift onay koşulu gelecekteki yetkili transaction'da denetlenir; actor FK tek başına yetki kanıtı değildir.
+- **Ayar sözleşmesi:** Şimdilik yalnız `default_payment_due_days`: JSON integer sayı, 0..2147483647 gün (integer saklama sınırı, ticari üst sınır değil), müşteri override'ı yokken vade gün sayısı. Eksik ayarda gelecek servis açık yapılandırma hatası vermeli; gizli fallback seçilmez. Anahtar/değer veya müşteri vadesi seed'de doldurulmaz. Yeni anahtar ancak migration+tip/aralık/açıklama+test ile eklenir.
+- **Seed:** Orijinal sekiz/yedi rol ve iki müşteri korunur. Sentetik ürün/birim, sıfır stoklu ürün, kısmi picking, tutarlı hareket toplamları, taslak/onay isteği, müşteri onaylı teslimat ve kısmi ödeme örnekleri vardır. Rakamlar fixture'dır; iskonto kuralı pasiftir. GPS/ayar/düzeltme tablosu kasıtlı boştur; fixture'ların doğrudan SQL ile yüklenmesi iş servislerinin çalıştığını kanıtlamaz.
+
+### Eski açık kararların güncel karşılığı
+
+| Eski kayıt | Bu onayla kapanan bölüm | Kalan bağımlılık |
+| --- | --- | --- |
+| A-01 | Takvim çeyreği, net toplam, ödeme şartı olmaması, onay/sonraki çeyrek | R-01 |
+| A-02 | Borç olayı, recorded tahsilat etkisi, kısmi/fazla ödeme, onay, vade ve exposure | R-02 |
+| A-03 | submitted rezervasyonu, picked fiziksel düşüm, kısmi toplama, telafi/sayım | R-03/R-06 işlem ayrıntıları |
+| A-04/A-05 | Lojistik/ödeme/talep ayrımı; risk ve picking sonrası iptalde Manager/Owner | R-03; tüm eski “Order Operator” kullanımlarına genel yetki verilmedi |
+| A-06/A-08 | 22 tablo ve 10 yardımcı, FK, fiyat/ödeme/sayım/atama geçmişi | Davet Faz 4; kampanya/kanıt/push ayrıntıları ilgili sonraki fazlarda |
+| A-07 | Kanonik snapshot alanları B-05 | Kapanan ad kararı; hesap yöntemi R-04 |
+| A-09/A-10 | GPS'nin yalnız iskelet olması kesin | Konum izin/retention/sağlayıcı Faz 12'de açık |
+| A-11 | Integer kuruş, kalem yuvarlama noktası, exact decimal dönüşüm | R-04 |
+| A-12 | DB'de zorunlu unique operation_key | R-06 |
+| A-13 | İki atanmış driver'ın işlem yapabilmesi, gerçek aktör | R-05 ve Faz 4 satır erişimi |
+| A-14 | Bu görevde değiştirilmedi | Gerçek Auth/üyelik/oturum Faz 4 |
+
+### Kalan açık kararlar — uygulanmış varsayım değildir
+
+| ID | Eksik kesin karar | Uygulamaya etkisi |
+| --- | --- | --- |
+| R-01 | Çeyrek sınırının iş saat dilimi; sonraki çeyrekte gelen iadelerin hangi dönemi düzelttiği; Manager/Owner çözümüyle teslim edilmiş ancak customer onayı olmayan siparişin iskonto uygunluğu; gerçek eşikler ve onay zamanının gecikmesi | Çeyrek hesaplama/öneri servisi öncesi gerekir. Seed pasif örneği ticari kural değildir. |
+| R-02 | Cari limit üretme formülü/değeri; sistem varsayılan vade gün sayısı; disputed/cancelled tahsilatın telafi zamanlaması ve muhasebe tutarı; exposure listesinde loaded/onay bekleyen teslimatın durumu | Cari ve ödeme transaction'ı uygulanmaz; onayda sayılan exposure durumlarına kendiliğinden yenisi eklenmez. |
+| R-03 | Tam sipariş/sefer/durak geçiş matrisi; failed/returned eşlemesi; kalem değişiklik geçmişi; yetersiz stok onayı sonrası rezervasyon nasıl sağlanır; picking sonrası iptal/iade/eksik teslim telafisinin kabul zamanı | Faz 8–13 iş servisleri öncesi netleşmeli. Şema hiçbir stok yokken rezervasyon zorlamaz. |
+| R-04 | Yarım kuruşun hangi yöne yuvarlandığı ve final birim fiyatı kesirli kuruşa düştüğünde integer snapshot ile kalem düzeyinde yuvarlamanın nasıl bağdaştırıldığı | Fiyat hesaplayıcısı yazılmadı; netleşmeden fiyat/sipariş kabulü yapılamaz. |
+| R-05 | İki driver'dan hangisinin puanlandığı; satışçı erişim sınırı; diğer istisnai tahsil yetkileri; tüm işlem/rol matrisi | FK aktörü kaydeder, yetki sağlamaz. Faz 4/11/13 kararlarıdır. |
+| R-06 | Transaction kilit sırası ve yarış kontrolü; aynı key/farklı payload cevabı, başarılı replay yanıtı, çok kalemli alt işlem key türetimi | Unique/immutable DB temeli var; eşzamanlı bakiye/rezervasyon güvenliği veya tam replay API'si iddia edilmez. |
+| R-07 | Kampanya/iskonto/maaş değişimi gibi eski kaynak audit örnekleri, yeni sınırlı audit listesine ileride alınacak mı; kanıt dosyası saklama ilişkileri | Bu görevde izin listesi genişletilmez; Storage/kampanya/Owner modülleri öncesi karar gerekir. |
+
+Bu soruların devam etmesi **migration + seed** kabulü ile gerçek iş akışı kabulünün ayrı olduğu gerçeğini değiştirmez. R-01–R-07 ilgili hesap/işlem fazının önkoşuludur; Phase 3 SQL testleri bu davranışları uygulanmış veya onaylanmış saymaz.
+
+### T-13 — Faz 3 kapanış incelemesinin yedi bütünlük düzeltmesi
+
+**Tarih/onay:** 2026-10-04; kullanıcı yedi P2 bulgunun migration/constraint/trigger düzeyinde giderilmesini ve negatif regresyonlarını açıkça istedi. Yeni `20261004000200_phase3_integrity_fixes.sql` kullanılır; ilk iki migration ve iki seed korunur. Tablo sayısı 35'tir. Yeni iş durumu, formül, RPC veya izin politikası eklenmez.
+
+| Bulgu | Uygulanan teknik karar | Regresyon |
+| --- | --- | --- |
+| 1. Onaylı sayım kalemleri | stock_count_items INSERT/UPDATE/DELETE trigger'ı ilgili başlıkları UUID sırasıyla FOR UPDATE kilitler; eski veya yeni parent approved ise işlemi reddeder. Kalemi başka sayıma taşıma da kapsamda. Bekleyen sayım düzenlenebilir. | 7 test: bekleyen düzenleme/onay pozitif; onaylı kalem ekleme/değiştirme/silme ve iki yönde taşıma negatif. |
+| 2. Sefer aracı/geçmiş | delivery_runs.vehicle_assignment_locked yalnız trigger'ların yönettiği kalıcı teknik kilittir. ended_at kaydı veya ilk stop ilişkisinden sonra araç değişemez. Mevcut geçmiş backfill edilir; yeni stop sonrası parent UPDATE, eşzamanlı araç değişimiyle aynı satır kilidini kullanır. ended_at/flag temizleme geçmiş kilidini kaldıramaz. | 9 test: kullanılmamış sefer/no-op pozitif; kapalı, geçmişli, ilk ataması yapılmış veya yeniden açılmış seferde araç değişimi negatif; ilk stop/kilit korunması doğrulanır. |
+| 3. Teslimat olay bayrakları | driver_confirmed yalnız ve bütün driver olaylarında, customer_confirmed yalnız ve bütün customer olaylarında true olur. Böylece boş/false customer kaydı tek onay slotunu tüketemez. Mevcut finalizes_delivery kısıtı customer/resolution dışını reddetmeye devam eder. | 10 test: geçersiz tür/bayrak/finalization kombinasyonları; reddedilen false kaydın slot/key'ini gerçek onayın kullanabilmesi; geçerli driver/customer/resolution kayıtları. |
+| 4. Kalemin sipariş bağı | order_items.order_id değişirse trigger 23514 verir; aynı değeri yazma kabul edilir. Mevcut fiyat/birim snapshot trigger'ı korunur. | 3 test: aynı ve farklı müşterinin başka siparişine taşıma reddi, no-op kabulü. |
+| 5. Değişiklik talebi karar kanıtı | approved/rejected order_change_requests için decided_by ve decided_at birlikte zorunlu CHECK. Tamamlanmış kaydı mevcut immutable karar trigger'ı korur. | 7 test: eksik aktör/zamanla INSERT ve UPDATE reddi; geçerli karar; karar kanıtının sonradan silinememesi. |
+| 6. Önceki durak bağı | previous_stop_id/order_id composite FK, aynı siparişe bağlar. CHECK kendisine bağlanmayı reddeder. Aktif stop unique index'i ve atama geçmişi trigger'ı korunur. | 3 test: başka sipariş ve self-link reddi, aynı siparişin önceki durağı kabulü. |
+| 7. Stok hareketi dayanağı | stock_count_id/product_id, stock_count_items PK'sına; compensates_movement_id/product_id, aynı ürünün inventory_movements kaydına composite FK ile bağlanır. | 4 test: yanlış ürünün sayımına/telafi hareketine bağlanma reddi; doğru ürün bağları kabulü. |
+
+**Sınırlar:** Seferin durum sözlüğü halen R-03'tür; yeni status adı veya kapanış geçişi seçilmedi. Araç kilidi için kayıtlı bitiş göstergesi `ended_at` ve atama geçmişi kullanılır. Flag bir yetki alanı değildir; client grant açılmaz ve false yazılması kilidi çözmez. Tür/bayrak bütünlüğü gerçek driver/customer/Manager/Owner yetkisi veya iki taraflı teslimat transaction'ı sağlamaz. Önceki durak zaman sırası, sayım onayından stok uygulaması ve telafi tutarı formülü bu migration'da seçilmez. R-01–R-07/A-14 açık kalır; Faz 4'e geçilmez.
+
+**Koruma/doğrulama:** 97 eski assertion aynen korunur, yeni 43 assertion aynı test dosyasının sonuna eklenir ve transaction sonunda rollback olur. Seed değiştirilmez. Identity 19/19 ve business 140/140 PASS, reset/test komutları çıkış 0. Satır kilidi kullanımı yapısal korumadır; çok oturumlu yarış testi bu görevde çalıştırılmış sayılmaz. Flutter ve son komut sonuçları PROGRESS/TESTING'dedir.

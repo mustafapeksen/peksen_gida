@@ -4,12 +4,15 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/routing/app_router.dart';
 import 'core/theme/app_theme.dart';
+import 'features/auth/presentation/auth_providers.dart';
 
 class PeksenGidaApp extends ConsumerWidget {
   const PeksenGidaApp({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Start once in the app scope, without blocking the offline preview.
+    ref.watch(authSessionProvider);
     return MaterialApp.router(
       title: 'Pekşen Gıda',
       debugShowCheckedModeBanner: false,

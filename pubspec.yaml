@@ -1,5 +1,5 @@
 name: peksen_gida
-description: "Pekşen Gıda Android uygulaması — Faz 2 arayüz iskeleti."
+description: "Pekşen Gıda Android uygulaması — backend hazırlığı."
 publish_to: 'none'
 version: 0.1.0+1
 
@@ -13,6 +13,7 @@ dependencies:
     sdk: flutter
   flutter_riverpod: 3.4.3
   go_router: 18.0.2
+  supabase_flutter: 2.18.0
 
 dev_dependencies:
   flutter_test:
