@@ -199,42 +199,43 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('İstemci hazır olsa da giriş kapalı ve önizleme bağımsızdır', (
-    tester,
-  ) async {
-    // The SDK owns an isolate; create/dispose it outside the widget fake clock.
-    final client = (await tester.runAsync(
-      () async => SupabaseClient(
-        testConfig.url,
-        testConfig.clientKey,
-        authOptions: const AuthClientOptions(autoRefreshToken: false),
-      ),
-    ))!;
-    addTearDown(() async {
-      await tester.pumpWidget(const SizedBox.shrink());
-      await tester.runAsync(client.dispose);
-    });
-    await tester.pumpWidget(
-      ProviderScope(
-        overrides: [
-          supabaseConfigProvider.overrideWithValue(testConfig),
-          supabaseInitializerProvider.overrideWithValue((_) async => client),
-        ],
-        child: const PeksenGidaApp(),
-      ),
-    );
-    await tester.pumpAndSettle();
-    expect(
-      find.textContaining('sunucu bağlantısı doğrulanmadı'),
-      findsOneWidget,
-    );
-    expect(
-      tester
-          .widget<FilledButton>(find.byKey(const ValueKey('login-submit')))
-          .onPressed,
-      isNull,
-    );
-    expect(client.auth.currentSession, isNull);
-    expect(tester.takeException(), isNull);
-  });
+  testWidgets(
+    'İstemci hazırsa giriş kullanılabilir; kendiliğinden oturum açılmaz',
+    (tester) async {
+      // The SDK owns an isolate; create/dispose it outside the widget fake clock.
+      final client = (await tester.runAsync(
+        () async => SupabaseClient(
+          testConfig.url,
+          testConfig.clientKey,
+          authOptions: const AuthClientOptions(autoRefreshToken: false),
+        ),
+      ))!;
+      addTearDown(() async {
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.runAsync(client.dispose);
+      });
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            supabaseConfigProvider.overrideWithValue(testConfig),
+            supabaseInitializerProvider.overrideWithValue((_) async => client),
+          ],
+          child: const PeksenGidaApp(),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.textContaining('sunucu bağlantısı doğrulanmadı'),
+        findsOneWidget,
+      );
+      expect(
+        tester
+            .widget<FilledButton>(find.byKey(const ValueKey('login-submit')))
+            .onPressed,
+        isNotNull,
+      );
+      expect(client.auth.currentSession, isNull);
+      expect(tester.takeException(), isNull);
+    },
+  );
 }

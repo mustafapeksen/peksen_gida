@@ -1,5 +1,44 @@
 # Pekşen Gıda doğrulama ve test planı
 
+## Güncel Faz 4 kontrolleri — 6 Ekim 2026
+
+Aşağıdaki sonuçlar Faz 3 tarihçesinden ayrıdır. Faz 4 erişim çekirdeği test edildi; **self-signup/çalışan daveti ve açık alan/üyelik sözleşmeleri tamamlanmadığından Faz 4 bütünü kapanmadı**. Faz 5 yapılmadı.
+
+| Komut | Sonuç | Çıkış |
+| --- | --- | ---: |
+| `flutter pub get` | Bağımlılıklar çözüldü; paket sürümleri/lock değişmedi | 0 |
+| `flutter analyze` | No issues found | 0 |
+| `flutter test --reporter expanded` | 85/85 (65 mevcut kapsam + 20 yeni) | 0 |
+| `flutter build apk --debug` | Built app-debug.apk; son assembleDebug 17,9 s | 0 |
+| `npx.cmd --yes supabase@2.119.0 db reset --local` | Dört migration + iki seed | 0 |
+| `npx.cmd --yes supabase@2.119.0 test db --local supabase/tests/database/identity_foundation_test.sql` | 19/19 PASS | 0 |
+| `npx.cmd --yes supabase@2.119.0 test db --local supabase/tests/database/business_foundation_test.sql` | 140/140 PASS | 0 |
+| `npx.cmd --yes supabase@2.119.0 test db --local supabase/tests/database/auth_access_test.sql` | 117/117 PASS | 0 |
+| `powershell.exe -NoProfile -ExecutionPolicy Bypass -File supabase/tests/run-local-auth-check.ps1` | Gerçek yerel Supabase SDK/Auth: 9/9; eski parola hash'leri geri yüklendi | 0 |
+| `flutter test integration_test/app_smoke_test.dart -d emulator-5554` | Android giriş/önizleme gezinmesi 1/1; gerçek Auth UI testi değil | 0 |
+| `git diff --check` | Temiz | 0 |
+
+Emulator-5554 cihaz listesinde Android 17 / API 37 olarak bağlı doğrulandı. Son integration normal build sonrasında çalıştırıldı; çıkış 0'dır. Yeni ekran görüntüsü/görsel inceleme yapılmadı. Gerçek yerel Auth SDK testi, önizleme Android testi ve görsel kabul birbirinin yerine sayılmadı.
+
+**Yerel önkoşullar:** Depo kökü D:\peksen_gida, Docker Desktop Linux motoru, pinned CLI 2.119.0 ve sentetik peksen_gida_phase3_local projesi. API 55321, DB 55322, shadow 55320. Servisler kapalıysa önce `npx.cmd --yes supabase@2.119.0 start`; sonra reset ve üç DB testi sırasıyla. Başarısız adımdan sonra ilerlemeyin. Cloud link/db push yoktur. Eski 543xx portları Windows tarafından ayrılan aralıkla çakıştığından kullanılmaz. Güncel tekrar komutları [Supabase README](../supabase/README.md) başındadır.
+
+**Loglar/başarısız ilk denemeler:** `build/phase4-validation-20261006/` altında komut, bitiş ve EXIT_CODE tutulur. İlk reset port hatası 1, ilk analyze iki curly-braces lint uyarısı 1, ilk auth-live CLI stderr yardımcı script hatası 1 olarak saklandı. Düzeltmelerden sonra ilgili kontroller 0 oldu. Üyelik RPC'si ve dispose regresyonu eklendikten sonra ilgili paketler tekrarlandı. JDK native-access uyarısı build'i başarısız yapmadı. Makine execution policy değiştirilmedi; yalnız script sürecinde Bypass kullanıldı.
+
+### Kapsam ve testlerin neyi kanıtladığı
+
+- **Identity 19 / business 140:** Eski tablolar, seed, roller, 7 P2 kısıtları dahil bütünlük regresyonları. Identity'de 3, business'ta 3 “policy/grant yok” beklentisi artık salt authenticated SELECT/anon ret/JWT subjectsiz sıfır satır/ham yazma ret olarak güncellendi; bütünlük testleri aynen kaldı. Testleri geçirmek için erişim modeli gizlenmedi veya politikalar test sırasında kaldırılmadı.
+- **Yeni DB 117:** Yedi DB rolü, auth.uid subject'leri, Owner-only maaş, Manager atama sınırı/eski ayrıcalıklı hesabı ele geçirme reddi, metadata ile rol yükseltme reddi, müşteri/üyelik/fiyat/kalem/ödeme/inbox ayrımı, Sales ataması/oluşturucusu ve yeniden atamada eski erişimin kesilmesi, Accounting projection ve yönetme yasağı, pasif profil/üyelik/kuruluş, primary/assistant/atanmamış driver run/order/vehicle/GPS sınırı, müşteri profil+üyelik transaction rollback'i, rol/atama audit'i. Fixture'lar rollback olur, seed değişmez.
+- **Flutter 85:** Önceki 65 kapsam + 20 yeni test. Yedi rol için giriş/çıkış ve korumalı rota; anonim doğrudan rota; preview Owner seçiminin gerçek yetki vermemesi; boş alan/çift gönderim/hassas hata; pasif profil/oturum hatası/yenilemede eski rolün temizlenmesi; geçersiz profil; giriş beklerken ekran dispose. Mevcut küçük ekran/klavye ve 70 preview bağlantısı testleri korunur. Bir eski “giriş her durumda kapalı” testi yeni işlevle tutarlı güncellendi.
+- **Canlı yerel SDK/Auth 9:** Sekiz sentetik hesapta (yedi rol, iki müşteri) gerçek Supabase signInWithPassword → RLS profil → refresh → signOut; yanlış girişte sabit hata. Script runtime anahtarı/parolayı bellekte tutar, eski seed hash'lerini geri yükler. Gerçek parola/secret dosyaya yazılmaz. Zorla kesilirse sentetik yerelde reset çalıştırılmalı. Bu test Android UI üzerinden login veya üretim Auth kabulü değildir.
+- **Şema sınırı:** İş transaction'ları, stok/ödeme yarışları, ürün/fiyat hesapları, GPS paylaşımı/retention veya e-posta gönderimi test edilmiş sayılmaz. Salt SELECT politikaları bu servisleri uygulamaz. Direct writes bütün rollerde kapalı; yalnız denetlenen identity/customer RPC'leri var.
+
+Normal build `build/app/outputs/flutter-apk/peksen-gida-phase4-debug.apk` olarak korundu: **231.265.828 bayt**. Başarı son build çıkış 0'a dayanır. APK config verilmeden üretildi; giriş demosu için public local config gerekir. Standart app-debug.apk integration runner'a ait olabilir.
+
+**Kalan manuel/kabul kontrolleri:** Android'de gerçek public config ile müşteri/çalışan giriş ve hata/klavye görsel incelemesi; farklı fiziksel cihazlar; gerçek e-posta/davet/kurtarma; kalıcı oturum ve hesap kapatma. Yeni ekranların görsel kabulü yapılmadı. Yerel SQL ve SDK testleri üretim güvenlik incelemesinin yerine geçmez. F4-03 tamamlanmadan Faz 4'ün tamamı “tamamlandı” değildir.
+
+## Önceki Faz 3 kayıtları — tarihsel
+
+
 ## Güncel sonuç — Faz 3 yedi P2 bütünlük düzeltmesi, 4 Ekim 2026
 
 Üç migration ve iki değişmemiş seed boş yerel DB'ye başarıyla uygulandı. **Identity 19/19**, **business 140/140** (eski 97 assertion aynen + yeni 43 regresyon), **Flutter 65/65** başarılı. Tablo sayısı 35; yeni tablo, client grant veya RLS izin politikası yok. Yeni migration: `supabase/migrations/20261004000200_phase3_integrity_fixes.sql`.

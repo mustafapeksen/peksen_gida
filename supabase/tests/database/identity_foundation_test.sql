@@ -25,8 +25,9 @@ select is((select count(*) from pg_class c join pg_namespace n on n.oid = c.reln
            where n.nspname = 'public' and c.relname in ('profiles','customers','customer_users')
            and c.relrowsecurity), 3::bigint, 'All foundation tables enable RLS');
 select is((select count(*) from pg_policies where schemaname = 'public'
-           and tablename in ('profiles','customers','customer_users')),
-          0::bigint, 'No application access policy is invented');
+           and tablename in ('profiles','customers','customer_users')
+           and (cmd <> 'SELECT' or roles <> array['authenticated']::name[])),
+          0::bigint, 'Phase 4 policies grant only authenticated reads, no direct writes');
 select throws_ok(
   $$ insert into public.customer_users values
      ('31000000-0000-4000-8000-000000000001', '30000000-0000-4000-8000-000000000008', true) $$,
@@ -42,12 +43,12 @@ select throws_ok($$ select * from public.customers $$, '42501', null::text,
                  'Anonymous customer reads are closed');
 reset role;
 set local role authenticated;
-select throws_ok($$ select * from public.profiles $$, '42501', null::text,
-                 'Authenticated profile reads are closed until Phase 4');
+select is((select count(*) from public.profiles), 0::bigint,
+          'Authenticated without a user sees no profiles');
 select throws_ok($$ update public.profiles set role = 'owner' $$, '42501', null::text,
                  'Client cannot assign roles');
-select throws_ok($$ select * from public.customer_users $$, '42501', null::text,
-                 'Client membership reads are closed');
+select is((select count(*) from public.customer_users), 0::bigint,
+          'Authenticated without a user sees no memberships');
 select throws_ok($$ insert into public.customers (company_name) values ('Denied') $$,
                  '42501', null::text, 'Client customer writes are closed');
 reset role;

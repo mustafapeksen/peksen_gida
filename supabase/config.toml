@@ -3,15 +3,15 @@ project_id = "peksen_gida_phase3_local"
 
 [api]
 enabled = true
-port = 54321
+port = 55321
 schemas = ["public"]
 extra_search_path = ["public", "extensions"]
 max_rows = 1000
 auto_expose_new_tables = false
 
 [db]
-port = 54322
-shadow_port = 54320
+port = 55322
+shadow_port = 55320
 major_version = 17
 
 [db.migrations]

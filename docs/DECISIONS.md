@@ -1,5 +1,7 @@
 # Pekşen Gıda — Karar kaydı
 
+**6 Ekim 2026:** Faz 4 başladı. Son kullanıcı rol atama/müşteri erişim onayları ve uygulama sınırları dosyanın sonundaki F4-01–F4-03'tedir; önceki Faz 3 kayıtları tarihçedir.
+
 **Son bütünlük düzeltmesi (4 Ekim 2026):** Kullanıcının kapanış incelemesindeki yedi P2 bulguyu düzeltme talebi T-13 kapsamında uygulandı. Onaylı B-01–B-09 iş kuralları ve R-01–R-07 açık kararları değiştirilmedi. Yeni migration eski dosyalara dokunmadan korumaları güçlendirir; business DB paketi artık 140 testtir (97 eski + 43 regresyon).
 
 **Güncel karar önceliği (4 Ekim 2026):** Kullanıcının B-01–B-09 onayları aşağıdaki eski kaynak kararlarını gerektiği yerde değiştirir. K-05/A-02'deki yalnız uyarıyla devam, A-03'teki belirsiz stok düşüm anı, K-09/A-13'teki driver tahsilat sınırı ve K-10/K-15'te yalnız Manager çözümü güncel uygulama kuralı değildir. Kaynak ve eski soru metinleri izlenebilirlik için korunmuştur; güncel cevaplar ve kalan sorular bu dosyanın sonundadır. DOCX değiştirilmez.
@@ -367,3 +369,44 @@ Bu soruların devam etmesi **migration + seed** kabulü ile gerçek iş akışı
 **Sınırlar:** Seferin durum sözlüğü halen R-03'tür; yeni status adı veya kapanış geçişi seçilmedi. Araç kilidi için kayıtlı bitiş göstergesi `ended_at` ve atama geçmişi kullanılır. Flag bir yetki alanı değildir; client grant açılmaz ve false yazılması kilidi çözmez. Tür/bayrak bütünlüğü gerçek driver/customer/Manager/Owner yetkisi veya iki taraflı teslimat transaction'ı sağlamaz. Önceki durak zaman sırası, sayım onayından stok uygulaması ve telafi tutarı formülü bu migration'da seçilmez. R-01–R-07/A-14 açık kalır; Faz 4'e geçilmez.
 
 **Koruma/doğrulama:** 97 eski assertion aynen korunur, yeni 43 assertion aynı test dosyasının sonuna eklenir ve transaction sonunda rollback olur. Seed değiştirilmez. Identity 19/19 ve business 140/140 PASS, reset/test komutları çıkış 0. Satır kilidi kullanımı yapısal korumadır; çok oturumlu yarış testi bu görevde çalıştırılmış sayılmaz. Flutter ve son komut sonuçları PROGRESS/TESTING'dedir.
+
+## Faz 4 — 6 Ekim 2026 onayları ve uygulama sınırları
+
+Bu bölüm önceki Faz 3'ün “policy yok / gerçek giriş kapalı” kayıtlarından önce gelir. Kullanıcı Faz 3'ü commit edip kabul etmiş, Faz 4 Auth + RBAC + RLS çalışmasını istemiştir. B-01–B-09 hesap/iş akışı kuralları değiştirilmez.
+
+### F4-01 — Onaylı rol atama ve müşteri kapsamı
+
+- **Owner:** Yedi rolün tamamını atama yetkisi vardır. **Manager:** yalnız customer, sales_operator, warehouse ve driver atayabilir; Accounting/Manager/Owner atayamaz, bu ayrıcalıklı hesapları alt role indirerek de yönetimi ele geçiremez. Assistant driver ayrı bir rol değildir; delivery_runs.assistant_driver_id ile atanmış driver'dır.
+- **Sales Operator:** yalnız kendisine atanmış **veya kendisinin oluşturduğu** müşteriyi okuyup yönetebilir. Owner/Manager tüm müşterileri görebilir. Atama/oluşturucu bilgisi istemci metadata'sından alınmaz. created_by değişmez; assigned_sales_operator_id yalnız denetlenen Owner/Manager RPC'siyle değişir. İlk aşamada tek atanmış satışçı sütunu vardır; birden fazla eşzamanlı satışçı gereksinimi onaylanmış değildir.
+- **Accounting:** müşteri operasyonlarını yönetemez. Ham customers tablosu kapalıdır; accounting_customers() yalnız id, company_name, credit_limit_kurus, payment_due_days döndürür. Adres/not/vergi/iletişim alanları açılmadı.
+- **Atanmamış müşteri:** Sales tarafından oluşturulmuş kayıt, açık “oluşturduğu müşteriler” onayı nedeniyle o Sales'a görünür. Ne Sales oluşturucusu ne ataması bulunan kayıtlar personel tarafında yalnız Owner/Manager'a görünür. Müşterinin kendi kuruluşuna erişimi korunur. Accounting'in atanmamış müşterinin cari kaydını görüp göremeyeceği açık kalır; istisna uygulanmadı.
+- **Kaynak:** Kullanıcının 6 Ekim devam mesajı; önceki A-13/R-05 satış kapsamı ve Manager rol atama belirsizliğinin bu kısmını kapatır. Diğer R-05 iş yetkileri kapanmaz.
+
+### F4-02 — Teknik uygulama
+
+- Mevcut 20261004000300_auth_read_access.sql tamamlanır; ilk üç migration ve iki seed değiştirilmez. 35 tablo korunur. customers'a nullable created_by ve assigned_sales_operator_id FK/index'leri eklenir; geçmiş kayıtların oluşturucusu/ataması tahmin edilmez.
+- private şeması API'ye açılmaz. Sabit boş search_path kullanan, yalnız authenticated tarafından çalıştırılabilen SECURITY DEFINER yardımcıları DB'deki aktif profili, aktif müşteri/üyeliği, Sales ilişkisini ve sefer atamasını denetler. JWT'nin user_metadata.role değeri yetki sağlamaz. Grant tek başına satır erişimi değildir; RLS her sorguda canlı DB rolünü denetler.
+- Anonim erişim ve tüm doğrudan tablo yazmaları kapalıdır. Owner bütün tablolarda okur; Manager operasyonel tablolarda okur ancak maaş, audit, ayarlar ve başkasının bildirim kutusu kapalıdır. Müşteri kendi kuruluşu/üyeliği/fiyatı/sipariş/kalem/history/ödemesi/puanı ve kendi bildirimini okur. Sales müşteri ilişkisi üzerinden müşteri/fiyat/sipariş/kalem/history/ödeme okur. Driver iki atama alanından biriyle kendi run/stop/vehicle/GPS kayıtlarını; yalnız açık durak ve bitmemiş sefer üzerinden sipariş/kalem/history okur. Müşteriye ham GPS geçmişi açılmaz.
+- Sınırlı yazma girişleri: assign_account_role, create_customer_record, assign_customer_sales, update_customer_contact, link_customer_account. Bunlar Auth credential oluşturmaz; mevcut Auth UUID'sine profil/rol ve kuruluş üyeliği hazırlar. Manager/Owner yetkisi eski **ve yeni** rol üzerinde kontrol edilir. Profil/üyelik oluşturma hatasında transaction bütünüyle geri alınır. Rol ve atama/üyelik yetki değişimleri audit'e yazılır; contact düzenlemesi ticari audit allowlist'ini genişletmez.
+- Sales contact yönetimi firma/yetkili kişi/telefon/e-posta/adres ile sınırlı; credit/active/vergi/not/atama değişikliği verilmedi. Owner/Manager create/link/role yetkileri RPC'dedir; ham INSERT/UPDATE/DELETE açılmaz. Sipariş/stok/fiyat/ödeme iş servisleri eklenmedi.
+- Flutter AccountRepository gerçek signInWithPassword, local-scope signOut ve RLS'li profil okuması sağlar. /account oturumla korunur; rol query parametresi veya debug seçiminden gelmez. Hata/yükleme/pasif profil eski rolü ekranda tutmaz; uygulamaya dönüşte profil yenilenir. RLS yetkinin asıl uygulama noktasıdır.
+- Oturum yalnız bellekte, token yenileme açık; kalıcı storage ve auth deep link kapalı. Uygulama kapanınca yeniden giriş gerekir. Giriş başarısızlığı sabit Türkçe hata verir, parola gönderim sonunda temizlenir. .env örneği boş kalır; login için yalnız public anahtar gerekir. Debug önizlemesi bağımsızdır.
+- Windows 6 Ekim kontrolünde 54310–54409 aralığını ayırdığı için reset port 54322 üzerinde çıkış 1 verdi. Yalnız proje config'i API 55321 / DB 55322 / shadow 55320 olarak değişti; Windows ağ politikası değiştirilmedi. Android debug adresi http://10.0.2.2:55321, host http://127.0.0.1:55321.
+- Phase 3 test sayıları 19 ve 140 korunur. Identity'nin üç, business'ın üç eski erişim beklentisi “policy/grant yok” yerine izinli SELECT / anonim kapalı / JWT subjectsiz boş sonuç / doğrudan yazma kapalı olarak güncellendi. Hiçbir şema/bütünlük regresyonu kaldırılmadı. Faz 4 ayrıca gerçek JWT subject + authenticated/anon rollerinde sınanır.
+- Teknik kaynak: [Supabase RLS](https://supabase.com/docs/guides/database/postgres/row-level-security), [Auth sign out](https://supabase.com/docs/guides/auth/signout). Local çıkış refresh token'ı iptal eder; alınmış access token'ın süresi dolmadan her koşulda anında geçersiz olduğu iddia edilmez. DB active/rol/üyelik denetimleri mevcut token'la da uygulanır.
+
+### F4-03 — Açık kalan kabul ve kararlar
+
+**Faz 4'ün tamamı kapanmadı.** Mevcut hesapla giriş ve sınırlı RBAC/RLS temeli, self-signup ve çalışan daveti yaşam döngüsünün yerine geçmez.
+
+| Açık konu | Bu tur uygulanan güvenli sınır / sonraki iş |
+| --- | --- |
+| Müşteri kendi e-posta/şifre kaydı; çalışan Auth oluşturma/davet kanalı ve ilk Owner | Mobil Admin anahtarı yok. Yerel signup halen kapalı. Mevcut Auth identity'lerine rol/üyelik provisioning RPC'si var; server-only Admin API, davet/kayıt arayüzü ve doğrulama/kurtarma akışı tamamlanmalı. Kaynakta müşteri doğrudan aktif şartı korunur; email doğrulaması ile active birleştirilmez. |
+| Üyelik transferi, çok kuruluş, pasif üyelik yeniden açma, customer ↔ çalışan dönüşümü | Mevcut üyeliği başka kuruluşa taşıma veya pasif üyeliği açma ve müşteri/çalışan rol dönüşümü reddedilir. Owner'ın rol atama yetkisi onaylıdır; bu dönüşümün bağlı müşteri/finans kayıtlarına etkisi onaylı değildir. A-14 kapsamında ayrı transaction tasarlanmalı. |
+| Accounting alanları/atanmamış müşterinin cari görünürlüğü | Dört alanlık asgari projection; atanmamış istisna kapalı. Tam onaylı alan listesi ve cari/tahsilat okuma API'leri ayrıca belirlenmeli. |
+| Sales'ın birden fazla ataması, oluşturucu erişiminin geri alınması, diğer müşteri düzenleme alanları | Tek atama ve kalıcı oluşturucu koşulu; bundan daha geniş yetki yok. Bütün müşteri operasyonlarının hazır olduğu iddia edilmez. |
+| Warehouse/Accounting iş satırı/alan matrisi; eski Order Operator eşlemesi | Kendi profil/bildirimleri dışında Warehouse iş erişimi açılmadı; Accounting yalnız minimal projection okur. İlgili sipariş/finans/stok servisinden önce erişim matrisi tamamlanmalı. |
+| Mobil kalıcı oturum, davet/kurtarma deep link, hesap kapatma/saklama | Bellek oturumu/refresh/local logout çalışır. Kalıcı saklama ve hesap yaşam döngüsü A-14'te açık; üretim kabulü yok. |
+| GPS müşteri son-konum ve retention; iş transaction yarışları | Faz 12 ve ilgili işlem fazları. Bu auth çalışması hesap/formül veya transaction güvenliği kabulü değildir. |
+
+Faz 5'e geçilmez. Sonraki somut iş, Faz 4 içinde kayıt/davet ve kalan alan/üyelik sözleşmesini kararlaştırıp uçtan uca onboarding akışını tamamlamaktır.

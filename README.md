@@ -1,5 +1,11 @@
 # Pekşen Gıda
 
+**Güncel durum — 6 Ekim 2026:** Faz 3 kabul edildi; **Faz 4 devam ediyor**. Supabase e-posta/parola girişi, bellek oturumu/yenileme/çıkış, DB profil/rol kontrolü ve sınırlı RLS/RPC altyapısı eklendi. Müşteri self-signup ve çalışan davet/Admin API akışı henüz yok; yerel signup kapalıdır. Son izin matrisi ve açık kararlar [DECISIONS F4-01–F4-03](docs/DECISIONS.md), kanıtlar [TESTING](docs/TESTING.md) başındadır. Aşağıdaki eski Faz 1–3 durumları tarihsel kayıtlardır; güncel durumu değiştirmez.
+
+Yapılandırmasız çalıştırma ağsız debug önizlemesini korur. `.env.example` boş public config şablonudur. Yerel Supabase API adresi Android emülatöründe `http://10.0.2.2:55321`, host'ta `http://127.0.0.1:55321`; DB portu 55322'dir. Eski 543xx portları Windows rezervasyonuyla çakıştığı için değişti. Geçerli public config sağlanınca giriş düğmesi kullanılabilir. Rol önizleme seçiminden alınmaz; `/account` gerçek oturumla açılır ve RLS üzerinden aktif DB profilini okur. Oturum kalıcı saklanmaz; uygulama kapanınca yeniden giriş gerekir.
+
+Sentetik seed parolaları bilinmez; manuel giriş için şifre depoya eklemeyin. Yerel Auth/SDK testi geçici rastgele parolayı yalnız bellekte kullanıp eski hash'leri geri yükleyen `supabase/tests/run-local-auth-check.ps1` ile yapılır. Komutlar ve sınırlar [Supabase README](supabase/README.md) içinde. İş ekranları halen geliştirme kabuğudur; Faz 5 modülü eklenmedi.
+
 Tek satıcılı, tek depolu, Android öncelikli B2B gıda tedarik, saha satış, depo, dağıtım ve tahsilat projesi. **Faz 1–3 tamamlandı; Faz 3 kabulü migration + seed ve mevcut config/client/auth-state hazırlığı kapsamındadır.** 25 kaynak tablo ve 10 yardımcı tablo yerel DB'de doğrulandı. Gerçek giriş/RBAC izinleri ve sipariş/stok/tahsilat iş servisleri uygulanmadı. Açık hesap/işlem kararları [DECISIONS R-01–R-07](docs/DECISIONS.md), güncel kanıtlar [PROGRESS](docs/PROGRESS.md) içindedir. Faz 4 başlatılmadı.
 
 Ana kaynak [Pekşen Gıda Teknik Tasarım ve Codex Geliştirme Planı v3](docs/Peksen_Gida_Teknik_Tasarim_v3.docx), 1 Ekim 2026 revizyonudur. Kaynak dosya korunur; tüm metin ve tablolar [SPEC](docs/SPEC.md) içinde bulunur. Formülü veya durum sınırı eksik konular karar kaydında açık tutulur.

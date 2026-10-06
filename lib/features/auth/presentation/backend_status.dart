@@ -19,9 +19,9 @@ class BackendStatus extends ConsumerWidget {
         AuthSessionStatus.unavailable =>
           'Backend yapılandırılmadı. Önizleme kullanılabilir.',
         AuthSessionStatus.signedOut =>
-          'İstemci hazır; sunucu bağlantısı doğrulanmadı. Giriş henüz kapalı.',
+          'İstemci hazır; sunucu bağlantısı doğrulanmadı. Giriş yapılabilir.',
         AuthSessionStatus.signedIn =>
-          'Oturum bilgisi alındı; rol yetkileri henüz bağlı değil.',
+          'Oturum bilgisi alındı; hesap erişimi veritabanından denetlenir.',
       },
     );
     return Text(

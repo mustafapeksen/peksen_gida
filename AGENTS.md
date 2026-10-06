@@ -1,5 +1,7 @@
 # Pekşen Gıda çalışma kuralları
 
+**6 Ekim 2026 — güncel görev:** Faz 3 kullanıcı tarafından commit edilip kabul edildi. Faz 4 Auth/RBAC/RLS başladı; aşağıdaki eski “Faz 4 başlamadı / policy yok / giriş kapalı” cümleleri tarihçedir. Son yetki onayları DECISIONS F4-01–F4-03'tedir: Owner tüm roller; Manager yalnız customer/sales_operator/warehouse/driver, ayrıcalıklı hedefi alt role indirme de yasak; Sales yalnız atandığı veya oluşturduğu müşteri; Accounting yalnız sınırlı cari projection. 35 tablo, eski üç migration ve iki seed korunur. Yeni auth_read_access migration'ı SELECT politikaları ve denetlenen rol/müşteri RPC'leri getirir; ham istemci yazmaları ve anonim erişim kapalıdır. Flutter gerçek giriş/çıkış ve DB profil kontrolü vardır; debug preview bağımsızdır. Faz 4 tam kapanmadı: self-signup/çalışan daveti, üyelik dönüşümü ve kalan alan matrisi bekler. Faz 5'e geçme; commit/push yapma. Yerel portlar API 55321 / DB 55322 / shadow 55320; son test sonuçları PROGRESS/TESTING başındadır.
+
 **4 Ekim 2026 güncellemesi:** Kullanıcının onaylı B-01–B-09 kararları eski kaynak kurallarından önce gelir; ayrıntılar DECISIONS T-12/R-01–R-07'dedir. Supabase runtime engeli kapandı. Yeni business migration/seed ile 25 kaynak tablo + 10 yardımcı tablo bulunur; identity 19/19 ve business 97/97 DB testi geçti. Aşağıdaki önceki üç tabloluk/ortam bekleyen kayıtlar tarihçedir. Gelecek iş servisleri için kalan kararlar vardır; gerçek Auth/RBAC/RLS veya sipariş/tahsilat işlem servisleri bu görevde yapılmaz.
 
 ## Amaç ve mevcut aşama

@@ -1,22 +1,54 @@
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../shared/widgets/preview_notice.dart';
 import 'backend_status.dart';
+import 'auth_providers.dart';
+import '../domain/account_repository.dart';
 
-class LoginPage extends StatefulWidget {
+class LoginPage extends ConsumerStatefulWidget {
   const LoginPage({super.key, required this.previewEnabled});
 
   final bool previewEnabled;
 
   @override
-  State<LoginPage> createState() => _LoginPageState();
+  ConsumerState<LoginPage> createState() => _LoginPageState();
 }
 
-class _LoginPageState extends State<LoginPage> {
+class _LoginPageState extends ConsumerState<LoginPage> {
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
   bool _obscurePassword = true;
+  bool _submitting = false;
+  String? _error;
+
+  Future<void> _signIn() async {
+    if (_submitting) return;
+    final email = _emailController.text.trim();
+    if (!email.contains('@') || _passwordController.text.isEmpty) {
+      setState(() => _error = 'E-posta ve parolanızı girin.');
+      return;
+    }
+    FocusManager.instance.primaryFocus?.unfocus();
+    setState(() {
+      _submitting = true;
+      _error = null;
+    });
+    try {
+      final repository = await ref.read(accountRepositoryProvider.future);
+      if (repository == null) throw const SignInException();
+      await repository.signIn(email, _passwordController.text);
+      if (mounted) context.go('/account');
+    } catch (_) {
+      if (mounted) setState(() => _error = const SignInException().toString());
+    } finally {
+      if (mounted) {
+        _passwordController.clear();
+        setState(() => _submitting = false);
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -36,6 +68,7 @@ class _LoginPageState extends State<LoginPage> {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final colors = theme.colorScheme;
+    final ready = ref.watch(accountRepositoryProvider).asData?.value != null;
 
     return Scaffold(
       body: SafeArea(
@@ -110,7 +143,9 @@ class _LoginPageState extends State<LoginPage> {
                           ),
                           const SizedBox(height: 8),
                           Text(
-                            'Giriş ekranı şu anda arayüz önizlemesidir.',
+                            ready
+                                ? 'Müşteri veya çalışan hesabınızla giriş yapın.'
+                                : 'Giriş ekranı şu anda arayüz önizlemesidir.',
                             style: theme.textTheme.bodyMedium?.copyWith(
                               color: colors.onSurfaceVariant,
                             ),
@@ -119,6 +154,7 @@ class _LoginPageState extends State<LoginPage> {
                           TextField(
                             key: const ValueKey('login-email'),
                             controller: _emailController,
+                            enabled: !_submitting,
                             keyboardType: TextInputType.emailAddress,
                             textInputAction: TextInputAction.next,
                             autocorrect: false,
@@ -133,6 +169,7 @@ class _LoginPageState extends State<LoginPage> {
                           TextField(
                             key: const ValueKey('login-password'),
                             controller: _passwordController,
+                            enabled: !_submitting,
                             obscureText: _obscurePassword,
                             textInputAction: TextInputAction.done,
                             autocorrect: false,
@@ -164,15 +201,21 @@ class _LoginPageState extends State<LoginPage> {
                             ),
                           ),
                           const SizedBox(height: 20),
-                          const FilledButton(
-                            key: ValueKey('login-submit'),
-                            onPressed: null,
-                            child: Text('Giriş yap'),
+                          if (_error != null)
+                            Text(_error!, key: const ValueKey('login-error')),
+                          FilledButton(
+                            key: const ValueKey('login-submit'),
+                            onPressed: ready && !_submitting ? _signIn : null,
+                            child: Text(
+                              _submitting ? 'Giriş yapılıyor…' : 'Giriş yap',
+                            ),
                           ),
                           const SizedBox(height: 14),
                           Text(
-                            'Oturum açma henüz bağlı değil. Girilen bilgiler '
-                            'gönderilmez veya kaydedilmez.',
+                            ready
+                                ? 'Giriş bilgileri yapılandırılan sunucuya gönderilir. Oturum bu cihazda kalıcı saklanmaz.'
+                                : 'Oturum açma henüz bağlı değil. Girilen bilgiler '
+                                      'gönderilmez veya kaydedilmez.',
                             style: theme.textTheme.bodySmall?.copyWith(
                               color: colors.onSurfaceVariant,
                               height: 1.5,
@@ -190,7 +233,7 @@ class _LoginPageState extends State<LoginPage> {
                     const SizedBox(height: 12),
                     OutlinedButton(
                       key: const ValueKey('preview-entry'),
-                      onPressed: _openPreview,
+                      onPressed: _submitting ? null : _openPreview,
                       child: const Text(
                         'Geliştirme önizlemesini aç',
                         textAlign: TextAlign.center,

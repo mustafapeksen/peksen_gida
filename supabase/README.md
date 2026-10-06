@@ -1,4 +1,30 @@
-# Faz 3 yerel backend temeli
+# Pekşen Gıda yerel backend
+
+## Güncel Faz 4 — 6 Ekim 2026
+
+Önceki üç migration ve iki seed korunur; `20261004000300_auth_read_access.sql` tamamlandı. 35 tablo var; customers'a oluşturucu ve Sales ataması FK/index'leri eklendi. RLS read politikaları, private rol/üyelik/atama yardımcıları ve sınırlı rol/müşteri yönetimi RPC'leri bulunur. Anonim erişim ve doğrudan tablo yazmaları kapalıdır. Yetki matrisi, açık noktalar ve RPC sözleşmesi [DECISIONS F4-01–F4-03](../docs/DECISIONS.md) içindedir. **Faz 4 tam bitmedi:** müşteri self-signup, çalışan Auth credential/davet ve yaşam döngüsü tamamlanmadı. Profil/üyelik RPC'leri mevcut Auth identity UUID'siyle çalışır; kullanıcı adı/parola üretmez. Warehouse iş erişimi ve Accounting'in tam finans alan matrisi henüz açılmadı.
+
+**Port değişikliği:** Windows 54310–54409 aralığını ayırdığı için API **55321**, DB **55322**, shadow **55320** kullanılır. Android emulator adresi `http://10.0.2.2:55321`; host adresi `http://127.0.0.1:55321`. Aynı sentetik `peksen_gida_phase3_local` projesi, cloud link yok. Eski çalışan servis varsa yeni portları almak için `stop` ve `start` gerekir. Config signup'ı kapalı tutar; secret istemciye/depo/sohbete yazılmaz.
+
+Depo kökünde PowerShell ile, yalnız yeniden oluşturulabilir yerel seed için:
+
+```powershell
+# Servisler kapalıysa: npx.cmd --yes supabase@2.119.0 start
+npx.cmd --yes supabase@2.119.0 db reset --local
+if ($LASTEXITCODE -ne 0) { throw 'Reset başarısız' }
+npx.cmd --yes supabase@2.119.0 test db --local supabase/tests/database/identity_foundation_test.sql
+if ($LASTEXITCODE -ne 0) { throw 'Identity başarısız' }
+npx.cmd --yes supabase@2.119.0 test db --local supabase/tests/database/business_foundation_test.sql
+if ($LASTEXITCODE -ne 0) { throw 'Business başarısız' }
+npx.cmd --yes supabase@2.119.0 test db --local supabase/tests/database/auth_access_test.sql
+if ($LASTEXITCODE -ne 0) { throw 'Auth/RLS başarısız' }
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File supabase/tests/run-local-auth-check.ps1
+if ($LASTEXITCODE -ne 0) { throw 'Gerçek yerel Auth kontrolü başarısız' }
+```
+
+Reset dört migration ve değişmemiş iki seed'i uygular. pgTAP fixture'ları rollback olur. Gerçek Auth scripti yalnız sabit yerel hedefte sekiz `.invalid` hesabı denetler; rastgele test girdisini process belleğinde tutar, SDK ile giriş/DB profil/refresh/çıkış sınar, parola hash'lerini finally bloğunda geri yükler. Script zorla kesilirse yerel `db reset --local` yapın. Hiçbir gerçek hesap veya üretim hedefinde kullanılmaz. Bu HTTP/SDK kanıtı Android'de gerçek girişin görsel kabulü değildir.
+
+**Önceki Faz 3 kurulum/kabul tarihçesi aşağıdadır.** Eski 543xx portları, policy yokluğu ve giriş kapalı ifadeleri güncel Faz 4 sınırlarının yerine geçmez.
 
 ## Güncel kapsam — 4 Ekim 2026 onaylarından sonra
 

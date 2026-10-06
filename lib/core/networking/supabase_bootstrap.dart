@@ -32,7 +32,7 @@ Future<SupabaseClient> initializeSupabaseClient(SupabaseConfig config) async {
     authOptions: const FlutterAuthClientOptions(
       localStorage: EmptyLocalStorage(),
       persistSession: false,
-      autoRefreshToken: false,
+      autoRefreshToken: true,
       detectSessionInUri: false,
       pkceAsyncStorage: _DisabledPkceStorage(),
     ),
@@ -40,8 +40,8 @@ Future<SupabaseClient> initializeSupabaseClient(SupabaseConfig config) async {
   return supabase.client;
 }
 
-// Phase 3 has no OAuth/code exchange. Avoid the SDK's eager preferences store
-// even when session persistence is disabled. Phase 4 must choose secure storage.
+// Password auth uses an in-memory session. Persistent storage, invitation links
+// and recovery deep links await the account lifecycle decision (F4-03).
 final class _DisabledPkceStorage extends GotrueAsyncStorage {
   const _DisabledPkceStorage();
 

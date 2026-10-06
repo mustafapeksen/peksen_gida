@@ -13,9 +13,11 @@ select tables_are('public', array['profiles','customers','customer_users','categ
  'All 25 source tables plus 10 named helper tables exist');
 select is((select count(*) from pg_class c join pg_namespace n on n.oid=c.relnamespace
  where n.nspname='public' and c.relkind='r' and c.relrowsecurity),35::bigint,'All tables enable RLS');
-select is((select count(*) from pg_policies where schemaname='public'),0::bigint,'No Phase 4 policies');
+select is((select count(*) from pg_policies where schemaname='public'
+ and (cmd <> 'SELECT' or roles <> array['authenticated']::name[])),0::bigint,'Policies permit only authenticated reads');
 select ok(not exists(select 1 from information_schema.role_table_grants
- where table_schema='public' and grantee in ('anon','authenticated','PUBLIC')),'No client table grants');
+ where table_schema='public' and (grantee in ('anon','PUBLIC')
+ or (grantee='authenticated' and privilege_type <> 'SELECT'))),'No anonymous access or direct client writes');
 select is((select count(*) from profiles),8::bigint,'Original identities unchanged');
 select is((select count(*) from warehouses),1::bigint,'One warehouse seeded');
 select is((select count(*) from products),2::bigint,'Two products seeded');
@@ -161,13 +163,14 @@ set local role anon;
 select throws_ok($$select * from products$$,'42501',null::text,'Anonymous business reads remain closed');
 reset role;
 set local role authenticated;
-select throws_ok($$select * from employee_salary_records$$,'42501',null::text,'Salary access closed pending Phase 4');
+select is((select count(*) from employee_salary_records),0::bigint,'No salary access without an identified Owner');
 select throws_ok($$update orders set status='delivered'$$,'42501',null::text,'Direct client order status update denied');
 select throws_ok($$insert into payments(order_id,payment_amount_kurus,method,collector_user_id,collected_at,verification_status,operation_key)
  values ('35000000-0000-4000-8000-000000000002',1,'cash','30000000-0000-4000-8000-000000000002',now(),'recorded',gen_random_uuid())$$,
  '42501',null::text,'Direct client payment write denied');
 reset role;
--- Closing review regressions. The original 97 assertions above remain intact.
+-- Closing review regressions. Phase 4 updates only three obsolete access
+-- expectations above; all original business constraints remain exercised.
 -- All fixtures below are rolled back; the application seed remains unchanged.
 insert into stock_counts(id,warehouse_id,created_by,status)
 select '43000000-0000-4000-8000-000000000001',id,'30000000-0000-4000-8000-000000000003','pending' from warehouses;
