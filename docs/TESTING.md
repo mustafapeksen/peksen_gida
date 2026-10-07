@@ -1,5 +1,33 @@
 # Pekşen Gıda doğrulama ve test planı
 
+## Güncel F4-04 doğrulaması — 6–7 Ekim 2026
+
+Üç onaylı karar için yeni migration ve 85 yeni DB regresyonu doğrulandı. **Faz 4 bütünü kapanmadı:** kayıt/davet ve kalıcı oturum bu devam görevinin tamamlanan üç kararından ayrı bekleyen işlerdir. Önceki dört migration, iki seed, identity/business ve Flutter kaynak/test dosyaları değişmedi. `auth_access_test.sql` içindeki 117 assertion korunur; Accounting'in satışçı oluşturucusuna dayalı 2 satır beklentisi onaylı yalnız atanmış 1 satıra daraltıldı.
+
+| Komut | Sonuç | Çıkış |
+| --- | --- | ---: |
+| `flutter pub get` | Başarılı; lock değişmedi | 0 |
+| `flutter analyze` | No issues found | 0 |
+| `flutter test --reporter expanded` | 85/85 | 0 |
+| `flutter build apk --debug` | Built app-debug.apk, 39,9 s assembleDebug | 0 |
+| `npx.cmd --yes supabase@2.119.0 db reset --local` | Beş migration, iki seed | 0 |
+| `npx.cmd --yes supabase@2.119.0 test db --local supabase/tests/database/identity_foundation_test.sql` | 19/19 PASS | 0 |
+| `npx.cmd --yes supabase@2.119.0 test db --local supabase/tests/database/business_foundation_test.sql` | 140/140 PASS | 0 |
+| `npx.cmd --yes supabase@2.119.0 test db --local supabase/tests/database/auth_access_test.sql` | 117/117 PASS | 0 |
+| `npx.cmd --yes supabase@2.119.0 test db --local supabase/tests/database/account_scope_test.sql` | 85/85 PASS | 0 |
+| `powershell.exe -NoProfile -ExecutionPolicy Bypass -File supabase/tests/run-local-auth-check.ps1` | Gerçek yerel Auth/SDK 9/9; fixture hash'leri geri yüklendi | 0 |
+| `flutter test integration_test/app_smoke_test.dart -d emulator-5554` | Android giriş/preview 1/1; görsel inceleme değil | 0 |
+
+DB toplamı **361** testtir (19 + 140 + 117 + 85); önceki 276 test korunur. Yeni dosya rollback fixture'ları kullanır, seed'i değiştirmez. Kapsam: anonim çağrı retleri; yalnız Owner dönüşümü; eski üyeliklerin ve müşteri/sipariş/tahsilat geçmişinin korunması; başarısız dönüşümde rol/üyeliğin korunması; açık primary/assistant seferi, açık durak ve Sales ataması engelleri; dönüşümden sonra eski kuruluş erişiminin kesilmesi; Accounting atama/alan sınırı ve atama kaldırılması; Warehouse tüm 13 sipariş durumunda üç izinli durum sınırı, exact JSON alan listeleri ve ham fiyat/müşteri/finans/yazma retleri; pasif hesapların reddi.
+
+**Kanıt ve tekrar ilkesi:** `build/phase4-scope-validation-20261006/` loglarında komut, END ve EXIT_CODE kayıtları bulunur. 6 Ekim'de tamamlanan kontroller dosyaları değişmeden 7 Ekim devamında tekrar edilmedi. Build başarı kanıtı logdaki Built ve çıkış 0'dır; APK'nın bulunması değildir. Normal APK integration öncesi `build/app/outputs/flutter-apk/peksen-gida-phase4-scope-debug.apk` olarak korundu (**231.265.828 bayt**); standart app-debug.apk test çalıştırıcısı tarafından değişebilir. Secret/config eklenmedi.
+
+**Önkoşullar/komutlar:** Windows PowerShell, Docker Desktop Linux motoru; yalnız sentetik `peksen_gida_phase3_local`, API 55321 / DB 55322 / shadow 55320. Motor durmuşsa başlatın; Supabase kapalıysa `npx.cmd --yes supabase@2.119.0 start`. Sonra reset → identity → business → auth_access → account_scope → yerel Auth scripti sırasını [Supabase README](../supabase/README.md) üzerinden kullanın. Başarısız komutta ilerlemeyin; canlı hedefte reset yapılmaz. Script için yalnız süreç bazlı ExecutionPolicy Bypass kullanıldı.
+
+**Kanıt sınırı:** SQL testleri gerçek anon/authenticated DB rolleriyle çalışır; yerel SDK testi gerçek Auth/RLS profil/refresh/logout davranışını sınar. Android smoke yalnız giriş/preview gezinmesini sınar, yeni dönüşüm/Accounting/Warehouse UI akışı veya görsel inceleme değildir. Çok oturumlu yarış, üretim Auth, e-posta/davet ve kalıcı oturum doğrulanmış sayılmaz. Manuel olarak public local config ile gerçek giriş/çıkış, hata/klavye görünümü ve fiziksel cihaz davranışı kontrol edilmelidir.
+
+## Önceki Faz 4 erişim temeli — tarihsel
+
 ## Güncel Faz 4 kontrolleri — 6 Ekim 2026
 
 Aşağıdaki sonuçlar Faz 3 tarihçesinden ayrıdır. Faz 4 erişim çekirdeği test edildi; **self-signup/çalışan daveti ve açık alan/üyelik sözleşmeleri tamamlanmadığından Faz 4 bütünü kapanmadı**. Faz 5 yapılmadı.

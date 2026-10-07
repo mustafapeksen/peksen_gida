@@ -1,6 +1,8 @@
 # Pekşen Gıda yerel backend
 
-## Güncel Faz 4 — 6 Ekim 2026
+## Güncel Faz 4 — 7 Ekim 2026
+
+`20261006000100_account_conversion_scoped_reads.sql` beşinci migration'dır; önceki dört migration ve iki seed değişmez. F4-04: `convert_account_role` yalnız Owner için iki yönlü müşteri–çalışan dönüşümü yapar; eski üyelikleri silmez, açık atamalar varken çalışanı müşteriye dönüştürmez. Accounting yalnız atanmış müşterinin onaylı alanlarını/tahsilatlarını; Warehouse ürün/stok/sayım ve submitted/picking/picked hazırlık alanlarını okur. Sütun ayrımı typed RPC, güvenli stok tabloları SELECT RLS ile uygulanır. Ham yazmalar/anon kapalı kalır. Tam RPC/alan sözleşmesi [DECISIONS F4-04](../docs/DECISIONS.md) içindedir. Yeni `account_scope_test.sql` 85 regresyon içerir. Aşağıdaki önceki Warehouse/Accounting eksik kapsam cümleleri tarihçedir; kayıt/davet ve kalıcı oturum halen bekler.
 
 Önceki üç migration ve iki seed korunur; `20261004000300_auth_read_access.sql` tamamlandı. 35 tablo var; customers'a oluşturucu ve Sales ataması FK/index'leri eklendi. RLS read politikaları, private rol/üyelik/atama yardımcıları ve sınırlı rol/müşteri yönetimi RPC'leri bulunur. Anonim erişim ve doğrudan tablo yazmaları kapalıdır. Yetki matrisi, açık noktalar ve RPC sözleşmesi [DECISIONS F4-01–F4-03](../docs/DECISIONS.md) içindedir. **Faz 4 tam bitmedi:** müşteri self-signup, çalışan Auth credential/davet ve yaşam döngüsü tamamlanmadı. Profil/üyelik RPC'leri mevcut Auth identity UUID'siyle çalışır; kullanıcı adı/parola üretmez. Warehouse iş erişimi ve Accounting'in tam finans alan matrisi henüz açılmadı.
 
@@ -18,11 +20,13 @@ npx.cmd --yes supabase@2.119.0 test db --local supabase/tests/database/business_
 if ($LASTEXITCODE -ne 0) { throw 'Business başarısız' }
 npx.cmd --yes supabase@2.119.0 test db --local supabase/tests/database/auth_access_test.sql
 if ($LASTEXITCODE -ne 0) { throw 'Auth/RLS başarısız' }
+npx.cmd --yes supabase@2.119.0 test db --local supabase/tests/database/account_scope_test.sql
+if ($LASTEXITCODE -ne 0) { throw 'Dönüşüm/alan yetkileri başarısız' }
 powershell.exe -NoProfile -ExecutionPolicy Bypass -File supabase/tests/run-local-auth-check.ps1
 if ($LASTEXITCODE -ne 0) { throw 'Gerçek yerel Auth kontrolü başarısız' }
 ```
 
-Reset dört migration ve değişmemiş iki seed'i uygular. pgTAP fixture'ları rollback olur. Gerçek Auth scripti yalnız sabit yerel hedefte sekiz `.invalid` hesabı denetler; rastgele test girdisini process belleğinde tutar, SDK ile giriş/DB profil/refresh/çıkış sınar, parola hash'lerini finally bloğunda geri yükler. Script zorla kesilirse yerel `db reset --local` yapın. Hiçbir gerçek hesap veya üretim hedefinde kullanılmaz. Bu HTTP/SDK kanıtı Android'de gerçek girişin görsel kabulü değildir.
+Reset beş migration ve değişmemiş iki seed'i uygular. pgTAP fixture'ları rollback olur. Gerçek Auth scripti yalnız sabit yerel hedefte sekiz `.invalid` hesabı denetler; rastgele test girdisini process belleğinde tutar, SDK ile giriş/DB profil/refresh/çıkış sınar, parola hash'lerini finally bloğunda geri yükler. Script zorla kesilirse yerel `db reset --local` yapın. Hiçbir gerçek hesap veya üretim hedefinde kullanılmaz. Bu HTTP/SDK kanıtı Android'de gerçek girişin görsel kabulü değildir.
 
 **Önceki Faz 3 kurulum/kabul tarihçesi aşağıdadır.** Eski 543xx portları, policy yokluğu ve giriş kapalı ifadeleri güncel Faz 4 sınırlarının yerine geçmez.
 

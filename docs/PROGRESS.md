@@ -1,5 +1,39 @@
 # Pekşen Gıda ilerleme kaydı
 
+## Faz 4 — 7 Ekim 2026, üç onaylı backend kararının devamı
+
+**Bu üç kararın backend uygulaması tamamlandı; Faz 4 bütünü tamamlanmadı.** F4-04, müşteri–çalışan dönüşümünü ve Accounting/Warehouse okumalarını tanımlar. Kayıt/davet, kalıcı oturum ve diğer hesap yaşam döngüsü işleri bekler. Faz 5'e geçilmedi.
+
+Başlangıç çalışma ağacı temiz, main/origin/main üzerinde `acca3f0` Auth/RLS temeliydi. Kesinti sırasında oluşan yeni migration/test ve tamamlanmış komut logları korunarak devam edildi. 6 Ekim'de biten pub get/analyze/Flutter test/build/reset ve dört DB kontrolü, dosyaları değişmediği için 7 Ekim'de tekrar çalıştırılmadı. Build'in bitişi `build-apk.log` içindeki **Built / EXIT_CODE: 0 / END** satırlarıyla kesinleştirildi; yalnız APK varlığına dayanılmadı.
+
+| Onaylı karar | Tamamlanan uygulama |
+| --- | --- |
+| Dönüşüm | Yalnız aktif Owner RPC'si; eski üyelikler pasif tutulur, geçmiş kayıtlar silinmez. Çalışan→müşteri için açıkça boş/aktif kuruluş seçilir; açık primary/assistant seferi, kapanmamış durak veya Sales müşteri ataması işlemi reddettirir. Değişiklik audit'li tek transaction'dır. |
+| Accounting | Sadece Sales ataması bulunan müşterilerin firma/iletişim/vergi/limit/vade ve tahsilat/düzeltme alanları. Oluşturucu ilişkisi tek başına yeterli değildir. Atama kaldırılınca erişim kesilir; yazma/yönetim/maaş/audit kapalıdır. |
+| Warehouse | Fiyatsız ürün projection'ı, birim/stok/hareket/sayım okumaları; yalnız submitted/picking/picked hazırlık kalemleri. Müşteri, fiyat/iskonto, ödeme ve maaş alanları kapalıdır. |
+
+**Değişen dosyalar:** Yeni `supabase/migrations/20261006000100_account_conversion_scoped_reads.sql`, yeni `supabase/tests/database/account_scope_test.sql`; `auth_access_test.sql` içinde yalnız Accounting'in onayla daraltılan satır beklentisi; AGENTS, README, PLAN, DECISIONS, PROGRESS, TESTING ve supabase/README. Önceki dört migration, iki seed, identity/business testleri, Flutter kod/test/platform/paket dosyaları değişmedi (`git diff --exit-code` koruma kontrolü 0). Tablo sayısı 35 kalır. Yeni yönetim/iş ekranı eklenmedi.
+
+| Komut | Sonuç | Çıkış |
+| --- | --- | ---: |
+| `flutter pub get` | Bağımlılıklar çözüldü; lock değişmedi | 0 |
+| `flutter analyze` | No issues found | 0 |
+| `flutter test --reporter expanded` | 85/85 | 0 |
+| `flutter build apk --debug` | Built app-debug.apk; assembleDebug 39,9 s | 0 |
+| `npx.cmd --yes supabase@2.119.0 db reset --local` | Beş migration + iki seed | 0 |
+| `npx.cmd --yes supabase@2.119.0 test db --local supabase/tests/database/identity_foundation_test.sql` | 19/19 PASS | 0 |
+| `npx.cmd --yes supabase@2.119.0 test db --local supabase/tests/database/business_foundation_test.sql` | 140/140 PASS | 0 |
+| `npx.cmd --yes supabase@2.119.0 test db --local supabase/tests/database/auth_access_test.sql` | 117/117 PASS | 0 |
+| `npx.cmd --yes supabase@2.119.0 test db --local supabase/tests/database/account_scope_test.sql` | Yeni 85/85 PASS; DB toplam 361 | 0 |
+| `powershell.exe -NoProfile -ExecutionPolicy Bypass -File supabase/tests/run-local-auth-check.ps1` | Yerel Auth/SDK 9/9; seed hash'leri geri yüklendi | 0 |
+| `flutter test integration_test/app_smoke_test.dart -d emulator-5554` | Android giriş/preview 1/1; görsel inceleme değil | 0 |
+
+Loglar `build/phase4-scope-validation-20261006/` altında komut/başlangıç/bitiş/çıkış koduyla tutulur; dizin adı ilk koşunun tarihidir. Eksik Auth ve Android kontrolleri 7 Ekim devamındadır. Başta Docker motoru kapalıydı; `docker desktop start` ve Supabase local start çıkış 0 ile açıldı. JDK native-access uyarısı normal APK build'ini başarısız yapmadı. Normal APK integration öncesi `build/app/outputs/flutter-apk/peksen-gida-phase4-scope-debug.apk` adıyla korundu: **231.265.828 bayt**. Public config verilmeden oluşturulan debug önizlemesidir.
+
+**Kalan kabul/sınırlar:** Signup/çalışan daveti/ilk Owner temini, kalıcı oturum ve kurtarma/hesap kapatma tamamlanmadı. Dönüşüm UI'si yoktur; RPC backend düzeyindedir. Genel üyelik transferi/yeniden etkinleştirme, Sales oluşturucu erişiminin iptali ve gelecekteki görev atamalarının dönüşüm engeline katılması ayrı karardır; yetki genişletilmedi. Yeni çok oturumlu yarış testi ve görsel Android incelemesi yapılmadı. Mevcut preview korunur. Commit/push/yayınlama yapılmadı.
+
+## Önceki Faz 4 erişim temeli — tarihsel
+
 ## Faz 4 — 6 Ekim 2026, mevcut hesapla giriş ve erişim temeli
 
 **Faz 4 devam ediyor; tamamı tamamlandı değildir.** Mevcut hesaplarda Supabase e-posta/parola girişi, token yenileme, çıkış, DB rol/profil okuması ve onaylı sınırlı RLS/RPC altyapısı doğrulandı. Müşteri self-signup, çalışan Auth credential oluşturma/davet arayüzü, üyelik dönüşümü/kalıcı oturum ve kalan alan matrisi eksik; DECISIONS F4-03. Faz 5'e geçilmedi.

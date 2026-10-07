@@ -399,6 +399,8 @@ Bu bölüm önceki Faz 3'ün “policy yok / gerçek giriş kapalı” kayıtlar
 
 **Faz 4'ün tamamı kapanmadı.** Mevcut hesapla giriş ve sınırlı RBAC/RLS temeli, self-signup ve çalışan daveti yaşam döngüsünün yerine geçmez.
 
+**7 Ekim güncellemesi:** Aşağıdaki önceki açık karar tablosunun müşteri–çalışan dönüşümü ve Accounting/Warehouse okuma kapsamı F4-04 ile karara bağlandı ve uygulandı. Genel üyelik transferi/yeniden etkinleştirme, kayıt/davet ve kalıcı oturum tamamlanmış değildir. Önceki dört alanlı Accounting ve Warehouse erişimi kapalı açıklamaları tarihçedir.
+
 | Açık konu | Bu tur uygulanan güvenli sınır / sonraki iş |
 | --- | --- |
 | Müşteri kendi e-posta/şifre kaydı; çalışan Auth oluşturma/davet kanalı ve ilk Owner | Mobil Admin anahtarı yok. Yerel signup halen kapalı. Mevcut Auth identity'lerine rol/üyelik provisioning RPC'si var; server-only Admin API, davet/kayıt arayüzü ve doğrulama/kurtarma akışı tamamlanmalı. Kaynakta müşteri doğrudan aktif şartı korunur; email doğrulaması ile active birleştirilmez. |
@@ -410,3 +412,29 @@ Bu bölüm önceki Faz 3'ün “policy yok / gerçek giriş kapalı” kayıtlar
 | GPS müşteri son-konum ve retention; iş transaction yarışları | Faz 12 ve ilgili işlem fazları. Bu auth çalışması hesap/formül veya transaction güvenliği kabulü değildir. |
 
 Faz 5'e geçilmez. Sonraki somut iş, Faz 4 içinde kayıt/davet ve kalan alan/üyelik sözleşmesini kararlaştırıp uçtan uca onboarding akışını tamamlamaktır.
+
+### F4-04 — Onaylı dönüşüm ve Accounting/Warehouse okuma sınırları
+
+**Onay:** Kullanıcının üç açık yanıtı ve 6–7 Ekim 2026 devam talimatı. Bu bölüm F4-01–F4-03'ün çelişen eski okuma/dönüşüm sınırlarından önce gelir. Yeni migration `20261006000100_account_conversion_scoped_reads.sql`; önceki dört migration, 35 tablo ve iki seed korunur. Yalnız bu üç karar uygulanır; kayıt/davet veya Faz 5 iş ekranı eklenmez.
+
+| Karar | Uygulanan sözleşme |
+| --- | --- |
+| Müşteri ↔ çalışan | `convert_account_role(target_user, target_role, target_customer)` yalnız aktif Owner'a açıktır. Mevcut Auth/profil üzerinde çalışır; credential üretmez. Sadece müşteri–çalışan yönleri kabul edilir; normal çalışan rol değişimi eski `assign_account_role` yolunda kalır. Manager dönüşüm yapamaz. |
+| Müşteriden çalışana | Eski `customer_users` satırları silinmez/taşınmaz; aktif olanlar pasifleştirilir. Kuruluş, sipariş, tahsilat ve diğer geçmiş kayıtlar korunur. Hedef kuruluş parametresi kabul edilmez. |
+| Çalışandan müşteriye | Owner açıkça aktif, hiçbir üyelik satırı bulunmayan bir kuruluş seçer. Eski pasif üyelik de kuruluşu dolu sayar; sessiz yeniden etkinleştirme yoktur. Yeni üyelik aktif kurulur; profilin mevcut `active` değeri korunur. |
+| Açık iş engeli | Kullanıcının `assigned_sales_operator_id` ile atandığı herhangi bir müşteri; primary/assistant olduğu bitmemiş sefer (`ended_at IS NULL`); bitmiş seferde dahi kapanmamış durak dönüşümü reddettirir. Kapanmış sefer geçmişi engel değildir. `created_by` geçmişi görev ataması sayılmaz. |
+| Accounting | Yalnız `assigned_sales_operator_id IS NOT NULL` müşteriler. Satışçı oluşturucusu tek başına yeterli değildir; atama kaldırılınca müşteri ve tahsilat okumaları kesilir. Yazma, müşteri yönetimi, ham müşteri/sipariş/ödeme satırları, maaş ve audit kapalıdır. |
+| Warehouse | Ürün/birim, stok, hareket ve sayım okumaları. Sipariş hazırlığı yalnız `submitted/picking/picked`; müşteri kimliği/iletişim/vergi, fiyat/tutar/iskonto, ödeme ve maaş açılmaz. Hiçbir stok veya sipariş mutasyonu eklenmez. |
+
+**Alan sözleşmeleri:**
+
+- `accounting_customers`: id, company_name, contact_name, phone, email, address, tax_no, tax_office, credit_limit_kurus, payment_due_days. notes/oluşturucu/operasyon alanları yoktur.
+- `accounting_payments`: id, customer_id, order_id, payment_amount_kurus, method, collector_user_id, collected_at, verified_by, verified_at, verification_status. `accounting_payment_adjustments`: id, payment_id, adjustment_amount_kurus, created_by, created_at. İkisi de aynı müşteri atama koşulunu denetler; tutar/borç hesaplamaz, serbest not ve işlem anahtarlarını vermez.
+- `warehouse_products`: id, sku, name, package_label, base_unit, active; fiyat alanı yoktur. `warehouse_preparation_items`: order_id, item_id, status, product_id, product_unit_id, unit, conversion_to_base_snapshot, quantity, picked_qty.
+- `warehouse_stock_counts` ve `warehouse_movements` açık tipli, yalnız stok alanlarını döndürür; serbest belge notları, genel reference alanları ve operation_key dışarıda kalır. `product_units`, `inventory`, `stock_count_items` mevcut tablolarında sadece aktif Warehouse SELECT politikası eklenir. Ham products/orders/order_items açılmaz; RLS'nin sütun gizlemediği göz önünde tutulur.
+
+**Teknik güvence:** Sekiz RPC'nin tümü sabit boş search_path ile SECURITY DEFINER; anon/PUBLIC execute kapalı ve fonksiyon içinde canlı DB rol denetimi vardır. Ham INSERT/UPDATE/DELETE grant'i eklenmez. Dönüşüm, Auth/profil ve üyelik/kuruluş satır kilitleriyle tek transaction'dır; hata rol/üyelik/audit değişikliği bırakmaz. Eski rol ve üyelikler ile hedef rol/kuruluş audit'e kaydedilir. Pasif profil kendiliğinden açılmaz.
+
+**Kalan sınırlar:** Şemada genel görev/atama tablosu yoktur; gelecekte eklenecek görevlerin dönüşüm engeline nasıl katılacağı ilgili serviste belirlenmelidir. Yeni sefer/iş atama servisleri aynı profil kilidi altında güncel rolü denetlemelidir; bu görev çok oturumlu yarış testinin veya iş transaction'larının kabulü değildir. Üyelik aktarımı, pasif üyelik geri açma, çoklu kuruluş, son Owner'ın hesap yaşam döngüsü, Sales oluşturucu erişiminin geri alınması ve Order Operator eşlemesi genişletilmedi. Self-signup, çalışan daveti/ilk Owner temini, kalıcı oturum, kurtarma/hesap kapatma halen Faz 4'te bekler. Dönüşüm yönetim ekranı ve bu okumaları tüketen iş ekranları bu backend kapsamına dahil değildir.
+
+**Test kapsamı:** `account_scope_test.sql` 85 regresyon içerir; tüm 13 sipariş durumunda hazırlık erişimi, tam projection alan listeleri, aktif/pasif rol, atama kaldırılması, yetkisiz dönüşüm, açık iş engelleri, rollback ve geçmiş korunması sınanır. Eski `auth_access_test.sql` 117 testini korur; yalnız Accounting'in oluşturucuya dayalı 2 satır beklentisi onaylı daha dar 1 satıra güncellenir. Nihai komut kanıtları PROGRESS/TESTING başındadır.

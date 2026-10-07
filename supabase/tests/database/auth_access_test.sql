@@ -129,7 +129,7 @@ reset role;
 select set_config('request.jwt.claim.sub','30000000-0000-4000-8000-000000000004',true);
 set local role authenticated;
 select is((select count(*) from customers),0::bigint,'Accounting cannot read full customer records');
-select is((select count(*) from accounting_customers()),2::bigint,'Accounting sees bounded financial projection of assigned/sales-created customers');
+select is((select count(*) from accounting_customers()),1::bigint,'Accounting sees assigned customers only; Sales creator alone is insufficient (F4-04)');
 select ok(not exists(select 1 from accounting_customers() where id='31000000-0000-4000-8000-000000000002'),'Unassigned finance exception stays closed');
 select throws_ok($$select create_customer_record('Denied')$$,'42501',null::text,'Accounting cannot create customer');
 select throws_ok($$select update_customer_contact('31000000-0000-4000-8000-000000000001','Denied',null,null,null,null)$$,'42501',null::text,'Accounting cannot manage customer');
