@@ -184,6 +184,9 @@ set local role authenticated;
 select lives_ok($$select convert_account_role('30000000-0000-4000-8000-000000000005','customer','61000000-0000-4000-8000-000000000002')$$,
  'Completed run history does not prevent explicit employee conversion');
 reset role;
+-- F4-05 keeps a last active Owner; retain this inactive-role test with a second Owner.
+insert into auth.users(id,email) values('63000000-0000-4000-8000-000000000001','spare.owner@peksen.invalid');
+insert into profiles(id,role,name) values('63000000-0000-4000-8000-000000000001','owner','Spare Owner');
 update profiles set active=false where id='30000000-0000-4000-8000-000000000007';
 set local role authenticated;
 select throws_ok($$select convert_account_role('30000000-0000-4000-8000-000000000001','owner')$$,

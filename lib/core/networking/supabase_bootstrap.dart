@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 import '../config/supabase_config.dart';
+import 'secure_session_storage.dart';
 
 typedef SupabaseInitializer = Future<SupabaseClient> Function(SupabaseConfig);
 
@@ -24,37 +25,24 @@ final supabaseClientProvider = FutureProvider<SupabaseClient?>(
   },
 );
 
-Future<SupabaseClient> initializeSupabaseClient(SupabaseConfig config) async {
+Future<SupabaseClient> initializeSupabaseClient(
+  SupabaseConfig config, {
+  LocalStorage? sessionStorage,
+}) async {
   final supabase = await Supabase.initialize(
     url: config.url,
     publishableKey: config.clientKey,
     debug: false,
-    authOptions: const FlutterAuthClientOptions(
-      localStorage: EmptyLocalStorage(),
-      persistSession: false,
+    authOptions: FlutterAuthClientOptions(
+      localStorage: sessionStorage ?? SecureSessionStorage(config.url),
+      persistSession: true,
       autoRefreshToken: true,
       detectSessionInUri: false,
-      pkceAsyncStorage: _DisabledPkceStorage(),
+      authFlowType: AuthFlowType.pkce,
+      pkceAsyncStorage: SecurePkceStorage(config.url),
     ),
   );
   return supabase.client;
-}
-
-// Password auth uses an in-memory session. Persistent storage, invitation links
-// and recovery deep links await the account lifecycle decision (F4-03).
-final class _DisabledPkceStorage extends GotrueAsyncStorage {
-  const _DisabledPkceStorage();
-
-  @override
-  Future<String?> getItem({required String key}) async => null;
-
-  @override
-  Future<void> setItem({required String key, required String value}) async {
-    throw const BackendInitializationException();
-  }
-
-  @override
-  Future<void> removeItem({required String key}) async {}
 }
 
 final class BackendInitializationException implements Exception {

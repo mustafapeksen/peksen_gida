@@ -1,3 +1,4 @@
+param([ValidateSet('auth_session_test.dart','account_onboarding_client_test.dart')][string]$TestFile='auth_session_test.dart')
 # Only the disposable local Phase 3/4 project. No cloud target or real account.
 # Run from the repository root after db reset and pgTAP checks.
 $ErrorActionPreference = 'Stop'
@@ -26,7 +27,7 @@ try {
   $env:PEKSEN_AUTH_TEST_URL = $status.API_URL
   $env:PEKSEN_AUTH_TEST_KEY = $status.ANON_KEY
   $env:PEKSEN_AUTH_TEST_INPUT = $randomInput
-  & flutter test supabase/tests/client/auth_session_test.dart --reporter expanded
+  & flutter test "supabase/tests/client/$TestFile" --reporter expanded
   $testExit = $LASTEXITCODE
 } catch {
   # Never render exception request bodies/headers or generated credentials.

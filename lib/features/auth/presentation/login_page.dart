@@ -213,7 +213,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                           const SizedBox(height: 14),
                           Text(
                             ready
-                                ? 'Giriş bilgileri yapılandırılan sunucuya gönderilir. Oturum bu cihazda kalıcı saklanmaz.'
+                                ? 'Giriş bilgileri yapılandırılan sunucuya gönderilir. Oturum cihazın güvenli deposunda saklanır. Ortak cihazda çıkış yapın.'
                                 : 'Oturum açma henüz bağlı değil. Girilen bilgiler '
                                       'gönderilmez veya kaydedilmez.',
                             style: theme.textTheme.bodySmall?.copyWith(
@@ -221,6 +221,26 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                               height: 1.5,
                             ),
                           ),
+                          if (ready) ...[
+                            TextButton(
+                              onPressed: _submitting
+                                  ? null
+                                  : () => context.push('/register'),
+                              child: const Text('Müşteri hesabı oluştur'),
+                            ),
+                            TextButton(
+                              onPressed: _submitting
+                                  ? null
+                                  : () => context.push('/accept-invite'),
+                              child: const Text('Daveti kabul et'),
+                            ),
+                            TextButton(
+                              onPressed: _submitting
+                                  ? null
+                                  : () => context.push('/recover'),
+                              child: const Text('Parolamı unuttum'),
+                            ),
+                          ],
                         ],
                       ),
                     ),

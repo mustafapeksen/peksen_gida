@@ -5,6 +5,13 @@ import '../data/supabase_auth_repository.dart';
 import '../domain/auth_repository.dart';
 import '../domain/account_repository.dart';
 import '../data/supabase_account_repository.dart';
+import '../data/supabase_account_lifecycle.dart';
+import '../domain/account_lifecycle.dart';
+
+final accountLifecycleProvider = FutureProvider<AccountLifecycle?>((ref) async {
+  final client = await ref.watch(supabaseClientProvider.future);
+  return client == null ? null : SupabaseAccountLifecycle(client);
+});
 
 final accountRepositoryProvider = FutureProvider<AccountRepository?>(
   retry: (_, _) => null,

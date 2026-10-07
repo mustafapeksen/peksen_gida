@@ -6,6 +6,10 @@ import '../../features/auth/presentation/login_page.dart';
 import '../../features/auth/presentation/account_page.dart';
 import '../../features/auth/presentation/auth_providers.dart';
 import '../../features/auth/domain/auth_repository.dart';
+import '../../features/auth/domain/account_lifecycle.dart';
+import '../../features/auth/presentation/onboarding_page.dart';
+import '../../features/auth/presentation/account_admin_page.dart';
+import '../../features/auth/presentation/password_page.dart';
 import '../../features/preview/domain/role_menu.dart';
 import '../../features/preview/presentation/preview_page.dart';
 import '../../features/preview/presentation/role_menu_page.dart';
@@ -41,7 +45,11 @@ GoRouter createAppRouter({
     refreshListenable: refreshListenable,
     redirect: (context, state) {
       final signedIn = isSignedIn?.call() ?? false;
-      if (state.uri.path == '/account' && !signedIn) return '/';
+      if ((state.uri.path == '/account' ||
+              state.uri.path.startsWith('/account/')) &&
+          !signedIn) {
+        return '/';
+      }
       if (state.uri.path == '/' && signedIn) return '/account';
       if (!allowPreview &&
           (state.uri.path == '/preview' ||
@@ -57,6 +65,31 @@ GoRouter createAppRouter({
       GoRoute(
         path: '/account',
         builder: (context, state) => const AccountPage(),
+        routes: [
+          GoRoute(
+            path: 'admin',
+            builder: (context, state) => const AccountAdminPage(),
+          ),
+          GoRoute(
+            path: 'password',
+            builder: (context, state) => const PasswordPage(),
+          ),
+        ],
+      ),
+      GoRoute(
+        path: '/register',
+        builder: (context, state) =>
+            const OnboardingPage(purpose: EmailCodePurpose.signup),
+      ),
+      GoRoute(
+        path: '/accept-invite',
+        builder: (context, state) =>
+            const OnboardingPage(purpose: EmailCodePurpose.invite),
+      ),
+      GoRoute(
+        path: '/recover',
+        builder: (context, state) =>
+            const OnboardingPage(purpose: EmailCodePurpose.recovery),
       ),
       GoRoute(path: '/login', redirect: (context, state) => '/'),
       GoRoute(

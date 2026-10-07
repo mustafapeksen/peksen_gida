@@ -1,5 +1,41 @@
 # Pekşen Gıda doğrulama ve test planı
 
+## Güncel F4-05/F4-06 — 7 Ekim 2026
+
+İstenen üç düzeltme gerçek yerel Auth SDK ile doğrulandı. **Faz 4 bütünü cihaz kabulü bekliyor.** Android smoke ile yeni gerçek auth ekranlarının görsel/kalıcı oturum kabulü aynı şey değildir.
+
+| Çalıştırılan komut | Sonuç | Çıkış |
+| --- | --- | ---: |
+| `flutter pub get` | Başarılı | 0 |
+| `flutter analyze` | No issues found | 0 |
+| `flutter test --reporter expanded` | 97/97 | 0 |
+| `flutter build apk --debug` | Built app-debug.apk; assembleDebug 431,5 s | 0 |
+| `npx.cmd --yes supabase@2.119.0 db reset --local` | Altı migration, iki seed | 0 |
+| `npx.cmd --yes supabase@2.119.0 test db --local supabase/tests/database/identity_foundation_test.sql` | 19/19 PASS | 0 |
+| `npx.cmd --yes supabase@2.119.0 test db --local supabase/tests/database/business_foundation_test.sql` | 140/140 PASS | 0 |
+| `npx.cmd --yes supabase@2.119.0 test db --local supabase/tests/database/auth_access_test.sql` | 117/117 PASS | 0 |
+| `npx.cmd --yes supabase@2.119.0 test db --local supabase/tests/database/account_scope_test.sql` | 85/85 PASS | 0 |
+| `npx.cmd --yes supabase@2.119.0 test db --local supabase/tests/database/account_onboarding_test.sql` | 54/54 PASS; toplam 415 | 0 |
+| `powershell.exe -NoProfile -ExecutionPolicy Bypass -File supabase/tests/run-local-auth-check.ps1` | Gerçek Auth/SDK 9/9 | 0 |
+| `powershell.exe -NoProfile -ExecutionPolicy Bypass -File supabase/tests/run-local-auth-check.ps1 -TestFile account_onboarding_client_test.dart` | Gerçek onboarding SDK 4/4 | 0 |
+| `flutter test integration_test/app_smoke_test.dart -d emulator-5554` | Giriş/önizleme 1/1; görsel inceleme değil | 0 |
+
+**Önkoşullar:** Docker Desktop Linux motoru, pinned CLI 2.119.0, yalnız sentetik `peksen_gida_phase3_local`; API 55321/DB 55322/shadow 55320/Mailpit 55324. Config değişikliğini almak için yerel stop/start başarılı yapıldı. Yerel e-posta onayı, kod şablonları ve Edge runtime açık olmalıdır. Reset → beş DB paketi → SDK scriptleri sırası izlenir; iki SDK scripti aynı anda çalıştırılmaz. SDK testleri yeni sentetik hesap/kuruluş/davet bırakır; tekrar temel DB testi öncesi reset gerekir. Scriptler gerçek hedefte kullanılmaz; kod/token/parola ve CLI status çıktıları paylaşılmaz.
+
+**Yeni regresyonlar:**
+
+- DB lifecycle 49→54: müşterinin role/kuruluş metadata'sını yükseltememesi, doğrulanmış e-posta, Manager sınırları, süresi dolmuş/iptal edilmiş/yetkisi düşmüş davet, kabul idempotency, anon erişim yasağı, yalnız kendi kabul boolean'ı, pasif profilde iş verisinin kapalı kalması, son Owner ve açık iş korumaları, kayıt geçmişi.
+- Gerçek SDK 4 senaryo: PKCE kayıt→kod→kurtarma→parola değişimi; Manager Edge daveti→kod→DB rolü→farklı parola içeren tekrarın ilk parolayı değiştirmemesi; credential kaydı sonrası yarım kabulün aynı parolayla tamamlanması; iptal edilmiş davetin profil oluşturamaması. Kısa/72 UTF-8 baytı aşan parolanın backend tarafından reddi ve yanlış uzunlukta girdinin OTP'yi tüketmemesi de sınanır.
+- Flutter 85→97: kayıt/davet/kurtarma formu, küçük ekran/klavye, yönetim rol sınırı, hata temizleme; ASCII/Unicode parola sınırı ve şifreli session/PKCE depo adaptörlerinde yeniden oluşturma, URL ayrımı, çıkış sıralaması. Host testlerinde native storage mock'tur; bu testler gerçek Android depolama kanıtı değildir.
+
+**Bitiş kanıtları:** `build/phase4-onboarding-validation-20261007/*.log`; komut, başlangıç/bitiş ve çıkış kodu kaydedilir. İlk analiz/test ve SDK HTTP-override hataları düzeltildi, ilgili kontroller yeniden geçti. `auth-onboarding-http-failure.log` başarısız SDK koşusunu saklar. Mevcut testlerin assertion'ları zayıflatılmadı; scope testine yalnız son Owner'ı korumak için ek Owner fixture'ı kondu.
+
+**Henüz yapılmadı:** Yeni auth ekranlarının Android görsel incelemesi; gerçek hesapla uygulamayı sonlandırıp açınca session restore ve logout sonrası kalıcı silinme; üretim SMTP/ilk Owner/gerçek cihaz kabulü. Manuel kontrol için yalnız public yerel config ile uygulamayı açın: kayıt→Mailpit kodu→hesap; Owner/Manager daveti→kabul; kurtarma; Owner pasifleştirme/açma. Her ekranda küçük boyut/büyük yazı/klavye ve sistem geri davranışını gözleyin. Uygulamayı zorla durdurup yeniden açın, doğru aktif DB profilinin geldiğini; çıkıştan sonra tekrar açınca hesap verisinin gelmediğini doğrulayın. Faz 5'e geçilmez.
+
+**APK:** Normal build integration öncesi `build/app/outputs/flutter-apk/peksen-gida-phase4-onboarding-debug.apk` olarak korundu; **237.979.014 bayt**. Build'in gerçek bitişi `build-apk.log` içindeki Built/EXIT_CODE: 0/END satırlarıyla doğrulandı. Android SDK Platform 35/CMake 3.22.1 otomatik kuruldu; native-access uyarısı çıkışı bozmadı. Public config verilmedi; APK'nın auth backend ekranları görsel olarak doğrulanmış değildir. Emülatör Android 17/API 37, cihaz `emulator-5554`; integration bitişi de logda çıkış 0'dır.
+
+## Önceki F4-04 doğrulaması — tarihsel
+
 ## Güncel F4-04 doğrulaması — 6–7 Ekim 2026
 
 Üç onaylı karar için yeni migration ve 85 yeni DB regresyonu doğrulandı. **Faz 4 bütünü kapanmadı:** kayıt/davet ve kalıcı oturum bu devam görevinin tamamlanan üç kararından ayrı bekleyen işlerdir. Önceki dört migration, iki seed, identity/business ve Flutter kaynak/test dosyaları değişmedi. `auth_access_test.sql` içindeki 117 assertion korunur; Accounting'in satışçı oluşturucusuna dayalı 2 satır beklentisi onaylı yalnız atanmış 1 satıra daraltıldı.

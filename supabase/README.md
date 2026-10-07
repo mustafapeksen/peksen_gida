@@ -1,5 +1,26 @@
 # Pekşen Gıda yerel backend
 
+## Kayıt/davet devamı — 7 Ekim 2026
+
+Güncel sözleşme F4-05/F4-06'dır. Altıncı migration `20261007000100_account_onboarding.sql` kayıt trigger'ı, private davet tablosu ve denetlenen davet/aktivasyon RPC'lerini ekler. 35 public tablo, önceki beş migration ve iki seed korunur. Ham yazmalar/anon erişimi açılmaz. E-posta sahipliği doğrulanır; müşteri profilinin aktif oluşması doğrulanmadan oturum açılabildiği anlamına gelmez. Owner-only pasifleştirme/yeniden açma, son Owner ve açık iş korumaları uygulanır.
+
+Yerelde signup/e-posta onayı açık, minimum parola 8 karakter; SDK/backend üst sınırı 72 UTF-8 bayttır. Mailpit **55324**, Edge runtime açıktır. Config değişmiş eski servis için önce `stop`, sonra `start` gerekir. E-posta şablonları `templates/code.html`; 6 haneli kod uygulamaya girilir. PKCE doğrulayıcısı şifreli platform deposundadır. `functions/invite-account` Auth token'ını sunucuda doğrular ve DB rol kontrolünden sonra runtime Admin API ile davet gönderir. Server credential istemciye veya dosyaya kopyalanmaz. Üretim SMTP/ilk Owner temini bu yerel kontrolün sonucu değildir.
+
+Önce aşağıdaki reset ve dört eski DB testini çalıştırın; ardından:
+
+```powershell
+npx.cmd --yes supabase@2.119.0 test db --local supabase/tests/database/account_onboarding_test.sql
+if ($LASTEXITCODE -ne 0) { throw 'Hesap yaşam döngüsü başarısız' }
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File supabase/tests/run-local-auth-check.ps1
+if ($LASTEXITCODE -ne 0) { throw 'Auth oturum testi başarısız' }
+powershell.exe -NoProfile -ExecutionPolicy Bypass -File supabase/tests/run-local-auth-check.ps1 -TestFile account_onboarding_client_test.dart
+if ($LASTEXITCODE -ne 0) { throw 'PKCE/kayıt/davet testi başarısız' }
+```
+
+DB testleri **19 + 140 + 117 + 85 + 54 = 415 PASS**; SDK oturum **9/9**, onboarding **4/4 PASS**, tüm çıkışlar 0. DB kontrolleri SDK testlerinden önce çalıştırılır: pgTAP fixture'ları rollback olur, SDK akışı yerel sentetik yeni müşteri/davet kayıtlarını bırakır. SDK scriptleri aynı anda çalıştırılmaz; sekiz seed hesabının geçici credential hash'leri sonunda geri yüklenir. Sonradan yeniden DB temelini sınamak için yalnız bu sentetik hedefte reset gerekir. Host testinde yalnız native secure-storage plugin'i mock'tur; HTTP, Auth, e-posta kodu, Edge ve DB gerçektir. Bu sonuç Android'de gerçek hesapla yeniden açılış/görsel kabul değildir.
+
+Aşağıdaki eski “kayıt kapalı / beş migration / yaşam döngüsü yok” ifadeleri önceki doğrulama tarihçesidir.
+
 ## Güncel Faz 4 — 7 Ekim 2026
 
 `20261006000100_account_conversion_scoped_reads.sql` beşinci migration'dır; önceki dört migration ve iki seed değişmez. F4-04: `convert_account_role` yalnız Owner için iki yönlü müşteri–çalışan dönüşümü yapar; eski üyelikleri silmez, açık atamalar varken çalışanı müşteriye dönüştürmez. Accounting yalnız atanmış müşterinin onaylı alanlarını/tahsilatlarını; Warehouse ürün/stok/sayım ve submitted/picking/picked hazırlık alanlarını okur. Sütun ayrımı typed RPC, güvenli stok tabloları SELECT RLS ile uygulanır. Ham yazmalar/anon kapalı kalır. Tam RPC/alan sözleşmesi [DECISIONS F4-04](../docs/DECISIONS.md) içindedir. Yeni `account_scope_test.sql` 85 regresyon içerir. Aşağıdaki önceki Warehouse/Accounting eksik kapsam cümleleri tarihçedir; kayıt/davet ve kalıcı oturum halen bekler.

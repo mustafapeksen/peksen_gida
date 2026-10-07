@@ -96,8 +96,11 @@ void main() {
     expect(calls, 1);
   });
 
-  test('Gerçek SDK başlangıcı oturum saklamadan ağsız tamamlanır', () async {
-    final client = await initializeSupabaseClient(testConfig);
+  test('Gerçek SDK başlangıcı boş test deposuyla ağsız tamamlanır', () async {
+    final client = await initializeSupabaseClient(
+      testConfig,
+      sessionStorage: const EmptyLocalStorage(),
+    );
     addTearDown(() => Supabase.instance.dispose());
     expect(client.auth.currentSession, isNull);
     final state = await SupabaseAuthRepository(client.auth)

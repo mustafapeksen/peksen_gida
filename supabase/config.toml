@@ -26,8 +26,24 @@ sql_paths = ["./seed.sql", "./seeds/business_foundation.sql"]
 enabled = true
 site_url = "http://127.0.0.1:3000"
 additional_redirect_urls = []
-# The local seed is provisioned via SQL. End-user auth is deferred to Phase 4.
-enable_signup = false
+# Signup creates an active customer; email ownership is verified before login.
+enable_signup = true
+minimum_password_length = 8
+
+[auth.email]
+enable_confirmations = true
+otp_length = 6
+otp_expiry = 3600
+
+[auth.email.template.confirmation]
+subject = "Pekşen Gıda kayıt kodunuz"
+content_path = "./supabase/templates/code.html"
+[auth.email.template.invite]
+subject = "Pekşen Gıda davet kodunuz"
+content_path = "./supabase/templates/code.html"
+[auth.email.template.recovery]
+subject = "Pekşen Gıda parola yenileme kodunuz"
+content_path = "./supabase/templates/code.html"
 
 [realtime]
 enabled = false
@@ -36,7 +52,8 @@ enabled = false
 enabled = false
 
 [local_smtp]
-enabled = false
+enabled = true
+port = 55324
 
 [storage]
 enabled = false
@@ -45,4 +62,7 @@ enabled = false
 enabled = false
 
 [edge_runtime]
-enabled = false
+enabled = true
+
+[functions.invite-account]
+verify_jwt = false

@@ -86,6 +86,16 @@ class _AccountPageState extends ConsumerState<AccountPage>
                         const Text(
                           'Oturum açıldı. İş ekranları sonraki geliştirme fazlarında bağlanacak.',
                         ),
+                        TextButton(
+                          onPressed: () => context.push('/account/password'),
+                          child: const Text('Parola değiştir'),
+                        ),
+                        if (value.role == AccountRole.owner ||
+                            value.role == AccountRole.manager)
+                          TextButton(
+                            onPressed: () => context.push('/account/admin'),
+                            child: const Text('Hesap yönetimi'),
+                          ),
                       ],
                     ),
             ),
