@@ -1,5 +1,20 @@
 # Pekşen Gıda ilerleme kaydı
 
+## Faz 4 kapanışı — 8–9 Ekim 2026 Android kabulü
+
+**Faz 4 tamamlandı (yerel geliştirme ve Android emülatör kabulü).** PLAN'daki sıradaki açık iş, gerçek Android auth ekranları ve kalıcı oturum kabulüydü; bu kapsam tamamlandı. Faz 5 başlatılmadı. Başlangıç çalışma ağacı temizdi (`8619931`); Flutter, migration, seed ve test kodu değiştirilmedi. Aşağıdaki 7 Ekim “cihaz kabulü bekliyor” kayıtları tarihçedir.
+
+- `emulator-5554`, Android 17/API 37 üzerinde gerçek yerel Supabase ile müşteri kaydı → e-posta kodu → müşteri profili; e-posta/parola girişi; çalışan daveti → kodla kabul → Depo profili; parola kurtarma → yeni parolayla giriş görüldü. Parola değiştirme ekranı ve geri dönüşü de incelendi; bu ekrandaki parola değiştirme işlemi ayrıca manuel tekrarlanmadı (önceki SDK testi mevcut).
+- Müşteri ve çalışan için uygulama `am force-stop` ile sonlandırılıp yeniden açıldı: doğru hesap geri geldi. Tamamlanmış çıkıştan sonra aynı işlem giriş ekranını açtı; eski hesap geri gelmedi. Owner yönetim ekranında sentetik müşteri pasifleştirildi ve tekrar açıldı; iki onay penceresi ve Pasif/Aktif sonuçları görüldü. Son durumda müşteri aktif ve cihazdaki Owner oturumu kapalıdır.
+- 320 dp genişlikte giriş/kayıt/kod/davet/kurtarma formları, açık klavye ve kaydırma incelendi. Hesap/yönetim ekranları ve Android geri dönüşleri çalıştı. Debug önizlemede müşteri menüsü/yer tutucu ve ekran → menü → önizleme → giriş geri zinciri görüldü. Geçici ekran boyutu/yoğunluğu sonunda sıfırlandı.
+- Kesinti sonrası emülatörde zaman sıçramasına eşlik eden uygulama, System UI ve launcher ANR'leri görüldü. Uygulama yeniden açıldıktan sonra yönetim ve önizleme kontrollerinde tekrarlanmadı. Ortam etkisi olasıdır; kesin kök neden tespit edildiği iddia edilmez. Ayrıntı ve sınırlar TESTING'dedir.
+
+8 Ekim komut kanıtları: analyze **0**, Flutter **97/97 / 0**, public yerel config ile debug build **0**. Önceki başarılı DB **415/415** ve yerel SDK **13/13** kontrolleri, kaynakları değişmediğinden yeniden çalıştırılmadı; bu tur yeni sonuç olarak sunulmaz. Yeni otomatik Android smoke sonucu TESTING'deki kapanış tablosundadır. Loglar ve incelenen ekran görüntüleri git dışında `build/phase4-android-acceptance-20261008/` altındadır. Normal yerel APK `build/app/outputs/flutter-apk/peksen-gida-phase4-local-20261008-debug.apk`, **237.978.068 bayt**; build başarısı logdaki Built/EXIT_CODE/END ile doğrulandı.
+
+9 Ekim otomatik Android smoke **1/1 PASS, çıkış 0** ile bitti. Normal yerel APK test sonrasında yeniden kuruldu ve giriş ekranında bırakıldı. `git diff --check` başarılı; yalnız AGENTS, README, PLAN, DECISIONS, PROGRESS ve TESTING güncellendi.
+
+Üretim SMTP/ilk Owner temini, fiziksel cihaz ve geniş cihaz/yazı boyutu matrisi bu yerel kabul değildir. Açık iş kuralları korunur. Sonraki faz Products + units + pricing; başlamadan PLAN'ın birim/hassasiyet önkoşulları ile DECISIONS R-01/R-04 fiyat kararları netleştirilmelidir. Bu görev yalnız Faz 4 kapanışıdır; secret, commit, push veya yayınlama yoktur.
+
 ## Faz 4 — 7 Ekim 2026, kayıt/davet devamı ve üç düzeltme
 
 **İstenen PKCE, tekrar davet kabulü ve parola sınırı düzeltmeleri tamamlandı. Faz 4 bütünü henüz tamamlanmadı; Android gerçek kalıcı oturum ve görsel kabul bekliyor.** Faz 5'e geçilmedi. Başlangıç/korunan temel `319b42b`; kesinti öncesi değişiklikler korundu, proje veya paket temeli yeniden oluşturulmadı.

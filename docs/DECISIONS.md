@@ -1,5 +1,11 @@
 # Pekşen Gıda — Karar kaydı
 
+### F4-07 — Android kabulünün kapanışı (8–9 Ekim 2026)
+
+F4-05/F4-06 iş ve yetki sınırları değişmedi. Gerçek Android emülatöründe kayıt/kod/davet/kurtarma, müşteri ve çalışan oturumunun process restart sonrası geri yüklenmesi ve tamamlanan çıkıştan sonra geri gelmemesi doğrulandı. Owner yönetiminde sentetik hesabı pasifleştirme/yeniden açma ve debug önizleme/geri gezinme gözlendi. Böylece aşağıdaki F4-06'nın Android kanıtı bekleyen maddesi kapandı; Faz 4 yerel geliştirme kabulü tamamlandı. Görsel kapsam, emülatörde gözlenen geçici ANR ve test sınırları TESTING'de kayıtlıdır.
+
+Yeni rol, izin veya iş formülü eklenmedi. Üretim ilk Owner temini/SMTP, genel üyelik aktarımı ve ileriki faz kararları hâlâ açık; bu kapanış üretime çıkış kararı değildir. Faz 5 bu görevde başlatılmadı.
+
 ### F4-05 — Onaylı kayıt, davet ve hesap yaşam döngüsü (7 Ekim 2026)
 
 Bu bölüm önceki kayıtlardaki “signup kapalı / oturum yalnız bellekte / hesap kapatma kararı bekliyor” ifadelerinden önce gelir. F4-01–F4-04 erişim sınırları değişmez.

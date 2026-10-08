@@ -1,5 +1,34 @@
 # Pekşen Gıda doğrulama ve test planı
 
+## Faz 4 Android kapanış kabulü — 8–9 Ekim 2026
+
+**Faz 4'ün kalan Android kabulü tamamlandı.** Kod/test/migration/seed değişikliği yok. Aşağıdaki eski “henüz yapılmadı” ifadeleri ilgili tarihlerin kaydıdır. Gerçek auth kontrolleri yerel Supabase'e bağlı normal debug APK üzerinde; otomatik preview smoke ise config verilmeden ayrı test APK'sıyla yapılır.
+
+| Kontrol | Gözlenen sonuç / kanıt |
+| --- | --- |
+| Giriş ve kayıt | Gerçek müşteri kaydı, Mailpit e-posta kodu, müşteri profili ve e-posta/parola girişi başarılı (`01–08`, `14–16`). |
+| Davet kabulü | Owner yetkili yerel davetten gerçek kodla kabul; hedef warehouse rolüyle Depo profili (`25–30`). Daveti üretme Edge çağrısıyla yapıldı; Android'de davet gönder düğmesiyle gönderim ayrıca denenmedi. |
+| Kurtarma / parola ekranı | Gerçek kodla yeni parola kaydı ve yeni parolayla giriş (`17–23`); mevcut parola değiştirme ekranı ve Android geri dönüşü görüldü (`10–11`). |
+| Kalıcı oturum | Müşteri ve çalışanda force-stop → yeniden açılış aynı doğru profili getirdi (`09`, `31`); tamamlanan çıkış → force-stop → açılış giriş ekranında kaldı (`12–13`, `32`). |
+| Owner yönetimi | Hesap/davet listeleri, sentetik müşterinin pasifleştirme ve yeniden açma onayları, Pasif → Aktif sonuçları (`45–59`). Owner sonunda çıkış yaptı. |
+| Küçük ekran / klavye | 720×1280, density 360 (320 dp genişlik); giriş/kayıt/davet/kurtarma alanları kaydırılarak erişilebilir, incelenen ekranlarda taşma görülmedi (`03–06`, `14`, `19–20`, `26`). Boyut/yoğunluk sonunda reset edildi. |
+| Preview / geri | Müşteri menüsü/yer tutucu, Android sistem geri zinciri girişe kadar çalıştı (`36–42`); hesap yönetiminden geri hesap ekranına döndü (`58`). |
+
+**Ortam olayı:** Uzun kesinti/zaman değişimi sonrasında logcat uygulama, System UI ve launcher için input-timeout ANR bildirdi; `33–34` ekranları bunu gösterir. Soğuk yeniden açılış (`am start -W`: Status ok, çıkış 0) sonrasında olay gözlenen akışlarda tekrarlanmadı. Bunun uygulama kaynaklı olmadığı kesin olarak kanıtlanmış değildir; tekrarlanırsa ANR trace ile ayrıca incelenmelidir. Olay gizlenerek kesintisiz başarılı koşu iddiasında bulunulmaz.
+
+**Sınırlar:** Android emülatör kontrolü fiziksel cihaz/üretim SMTP/release kabulü değildir. Büyük yazı ölçeği bu manuel turda denenmedi; önceki widget testi kanıtı manuel kontrol yerine geçmez. OTP/parola/token ekran görüntülerine veya dokümanlara yazılmadı; sentetik hesaplar yerel DB'de kalır. İlk Owner'ın üretimde temini, genel üyelik aktarımı ve sonraki faz iş kararları açık kalır. RLS/yetki negatif senaryoları için 7 Ekim'in 415 DB ve 13 SDK testi korunur; bu tur kod değişmediğinden reset/DB/SDK komutları yeniden çalıştırılmadı.
+
+| Bu görevde çalıştırılan komut | Sonuç | Çıkış |
+| --- | --- | ---: |
+| `flutter analyze` (8 Ekim) | No issues found | 0 |
+| `flutter test --reporter expanded` (8 Ekim) | 97/97 | 0 |
+| `flutter build apk --debug --dart-define-from-file=build/phase4-android-acceptance-20261008/public-config.json` (8 Ekim) | Built app-debug.apk; 55,7 s | 0 |
+| `flutter test integration_test/app_smoke_test.dart -d emulator-5554` (9 Ekim) | 1/1 PASS; config verilmeden giriş/önizleme smoke | 0 |
+
+Integration sonrasında korunan normal yerel APK tekrar kuruldu (`adb install -r`: Success) ve soğuk açılış `Status: ok` verdi. Cihaz test çalıştırıcısı yerine normal uygulamanın giriş ekranında bırakıldı. Bu testin görsel/gerçek auth kabulü yerine kullanılmadığı yukarıdaki ayrı kanıt tablosunda belirtilmiştir.
+
+Loglar: `build/phase4-android-acceptance-20261008/`, COMMAND/EXIT_CODE/END kayıtları. Korunan normal APK: `build/app/outputs/flutter-apk/peksen-gida-phase4-local-20261008-debug.apk` (**237.978.068 bayt**). Bu dosya integration test APK'sından ayrıdır; yalnız public yerel config içerir. Önceki başarılı pub get tekrar edilmedi.
+
 ## Güncel F4-05/F4-06 — 7 Ekim 2026
 
 İstenen üç düzeltme gerçek yerel Auth SDK ile doğrulandı. **Faz 4 bütünü cihaz kabulü bekliyor.** Android smoke ile yeni gerçek auth ekranlarının görsel/kalıcı oturum kabulü aynı şey değildir.
