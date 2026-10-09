@@ -1,5 +1,31 @@
 # Pekşen Gıda doğrulama ve test planı
 
+## Faz 5 doğrulaması — 9 Ekim 2026
+
+| Komut | Sonuç | Çıkış |
+| --- | --- | ---: |
+| `flutter pub get` | Başarılı; bağımlılık/lock değişmedi | 0 |
+| `flutter analyze` | No issues found | 0 |
+| `flutter test --reporter expanded` | 113/113; 97 eski + 16 yeni | 0 |
+| `flutter build apk --debug` | Built app-debug.apk; 42,4 saniye | 0 |
+| `npx.cmd --yes supabase@2.119.0 db reset --local` | Yedi migration + iki seed | 0 |
+| `npx.cmd --yes supabase@2.119.0 test db --local supabase/tests/database/product_pricing_test.sql` | 73/73 PASS | 0 |
+| `npx.cmd --yes supabase@2.119.0 test db --local supabase/tests/database/business_foundation_test.sql` | 140/140 PASS | 0 |
+| `npx.cmd --yes supabase@2.119.0 test db --local supabase/tests/database/account_scope_test.sql` | 85/85 PASS | 0 |
+| `flutter test integration_test -d emulator-5554` | 2/2 PASS: mevcut preview ve yeni ürün/fiyat smoke | 0 |
+
+**Kapanış:** Onaylı Faz 5 kapsamı tamamlandı. İlgili DB toplamı 298, Flutter 113, Android smoke 2 testtir. Normal debug APK **238.014.758 bayt**; standart `app-debug.apk` integration tarafından değiştirildiğinden normal uygulama için korunan `peksen-gida-phase5-debug.apk` kullanılmalıdır. Bu koşunun build'i public config verilmeden üretildi.
+
+**Yeni DB kapsamı:** Warehouse fiyatsız taslağı/atomic birim doğrulaması, null fiyat ve satış kilidi; yalnız Manager/Owner fiyat yetkisi; tek history/audit ve idempotent replay, farklı payload/eski fiyat ret; exact 0.25 dönüşüm, taban minimumu, yarım kuruş ve kalem seviyesinde yuvarlama, overflow, kapalı birim; müşteri/Sales aynı fiyat, müşteri ayrımı, tarih başlangıcı; exact snapshotın saklanması/değişmezliği ve katalog/iskonto değişiminden korunması; pasif hesap, Accounting/Driver/anon ret. Yeni test transaction sonunda rollback olur, seed değiştirmez. Eşzamanlı iki bağlantıyla stres testi yapılmadı; fiyat RPC'sindeki kilit sırası F5-01'de belgeli, stale-write/replay davranışı DB testlidir.
+
+**Yeni Flutter kapsamı:** float kullanmadan para/iskonto gösterimi, büyük integer sınırı ve exact dönüşüm taşıma; Warehouse fiyat gizliliği, dört yetkisiz rol ve oturumsuz doğrudan rota, fiyat formu/doğrulama/retry anahtarı, açık satış eylemi, profil erişimi yenilenince verinin kalkması, yükleniyor/hata/boş/yeniden dene, küçük ekran-klavye ile taslak oluşturma, backend quote sonucunun kullanımı ve miktar değişince eski sonucun temizlenmesi. Host widget fixture'ları gerçek Auth/DB kanıtı değildir.
+
+**Koşu kaydı:** `build/phase5-validation-20261009/*.log` komut/başlangıç/bitiş/çıkış kodlarını taşır. İlk reset Docker engine kapalıyken 1 verdi; `docker desktop start` 0 sonrası reset 0. `.env` veya backend bağlantı yapılandırması değiştirilmedi. İlk pgTAP `has_column` çağrısının yanlış overload'u 1/73 hata verdi; açık dört parametreli kontrolle 73/73 geçti. İlk analizdeki süslü parantez lint'leri giderildi. İki yeni widget testinde fixture/kaydırma hedefi düzeltildi; assertion zayıflatılmadı. İlk başarısız Flutter ve DB logları ayrı saklandı.
+
+**Korunan kapsam:** Önceki altı migration, iki seed, identity/business/auth_access/account_scope/account_onboarding test dosyaları ve pubspec/lock değişmedi. Ürün/para şeması ve Warehouse erişimine doğrudan temas eden business/account_scope paketleri yeniden çalıştırıldı. Identity 19, auth_access 117, lifecycle 54 ve yerel Auth SDK 13 başarılı Faz 4 kayıtları bu tur tekrar edilmedi; yeni sonuç gibi sunulmaz. Faz 4 manuel Android kabulü yeniden açılmadı.
+
+**Android sınırı:** Yeni `product_management_smoke_test.dart` gerçek emülatörde ürün → fiyat formu → kaydet → sistem geri akışını deterministik repository ile sınar; gerçek Supabase fiyat yazma kanıtı değildir. DB testi gerçek yerel PostgreSQL hesap/yetki kanıtıdır. Yeni ekranların backend'e bağlı manuel görsel incelemesi, fiziksel cihaz ve üretim testi bu tur yapılmadı. Normal APK integration öncesi `build/app/outputs/flutter-apk/peksen-gida-phase5-debug.apk` olarak korunur; public config verilmedi, gerçek giriş için README'deki yerel çalıştırma yapılandırması gerekir.
+
 ## Faz 4 Android kapanış kabulü — 8–9 Ekim 2026
 
 **Faz 4'ün kalan Android kabulü tamamlandı.** Kod/test/migration/seed değişikliği yok. Aşağıdaki eski “henüz yapılmadı” ifadeleri ilgili tarihlerin kaydıdır. Gerçek auth kontrolleri yerel Supabase'e bağlı normal debug APK üzerinde; otomatik preview smoke ise config verilmeden ayrı test APK'sıyla yapılır.

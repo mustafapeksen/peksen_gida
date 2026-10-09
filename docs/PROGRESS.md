@@ -1,5 +1,21 @@
 # Pekşen Gıda ilerleme kaydı
 
+## Faz 5 — 9 Ekim 2026, onaylı ürün/birim/fiyat uygulaması
+
+**Faz 5 tamamlandı (onaylı ürün/birim/fiyat kapsamı).** Android smoke **2/2 PASS / çıkış 0** ile bitti. Faz 4 kullanıcı tarafından kabul edilmiş temel olarak korundu; auth/OTP/kalıcı oturum ve bağlantı sorunları yeniden açılmadı. Başlangıç commit'i `0020c59`; kesinti öncesi ürün dosyaları korunup tamamlandı. Yeni iş kararları F5-01'dedir; Faz 6 başlatılmadı.
+
+- Warehouse/Manager/Owner mevcut aktif kategorilerle, bir veya daha fazla exact decimal satış birimiyle fiyatsız ve satışa kapalı ürün oluşturabilir. Warehouse ürün/birim verisini fiyatsız görür; Accounting fiyat erişimi/yazması kapalı kalır. Kategori yönetimi veya mevcut birimleri değiştirme için varsayılan yetki eklenmedi.
+- Manager/Owner fiyatı gerekçe ile belirler/değiştirir; eski/yeni fiyat, aktör, zaman, operation_key ayrı immutable fiyat geçmişi ve audit'e tek transaction ile yazılır. Aynı istek tekrarında ikinci olay oluşmaz; değişmiş payload ve eski fiyatla yazma reddedilir. Fiyatı belirlenen ürün ayrı eylemle satışa açılır.
+- `quote_product` yalnız kendi/atanmış-oluşturulmuş müşteri veya Manager/Owner kapsamındaki fiyatı hesaplar. Pozitif integer satış miktarı, exact dönüşüm, taban minimumu ve Europe/Istanbul başlangıç günü kontrol edilir. Client fiyatı/iskontosu kabul edilmez. Tam yarımda yukarı kalem yuvarlaması ve kesirli birim snapshotı F5-01'e uygundur. Manager/Owner ekranındaki müşteri fiyatı hesabı bu RPC'yi kullanır; sepet/sipariş veya stok rezervasyonu yoktur.
+- Yedinci migration `20261009000100_product_pricing.sql`: nullable taslak fiyatı, aktif üründe fiyat zorunluluğu, exact snapshot alanları/check/immutable trigger ve dar RPC'ler. İlk altı migration, iki seed ve mevcut SQL testleri değişmedi. Yeni public tablo veya ham yazma grant'i yok; 35 public tablo korunur.
+- Flutter: `lib/features/products/{domain,data,presentation}` altında ürün repository/model, Riverpod provider, ürün/birim listesi, taslak oluşturma, fiyat/geçmiş/satışa açma ve müşteri fiyatı hesaplama ekranları. Hesap ekranına ürün girişi ve `/account/products` alt rotaları eklendi. Preview bağımsız kaldı.
+
+**Doğrulamalar:** pub get **0**, analyze **0**, Flutter **113/113 / 0** (97 eski + 16 yeni), debug build **0**; local reset **0**, yeni DB **73/73 / 0**, mevcut business **140/140 / 0**, account_scope **85/85 / 0**. İlk reset Docker kapalı olduğundan 1 verdi; Docker Desktop başlatıldıktan sonra reset geçti. Yeni DB testindeki pgTAP sütun çağrısı, yeni widget testlerindeki profil fixture yenilemesi ve lazy form kaydırması düzeltildi; beklentiler kaldırılmadı. Eski test kodları değiştirilmedi. Ayrıntılar/loglar TESTING'dedir.
+
+**Dosyalar:** Yeni yedi `lib/features/products/` dosyası, yeni ürün migration'ı, `product_pricing_test.sql`, `test/products_test.dart`, `integration_test/product_management_smoke_test.dart`; mevcut router/hesap menüsü; AGENTS, README, PLAN, DECISIONS, PROGRESS, TESTING ve supabase/README. Normal APK integration öncesi `build/app/outputs/flutter-apk/peksen-gida-phase5-debug.apk` olarak saklandı (**238.014.758 bayt**). Build başarı kanıtı dosya varlığı değil logdaki Built/EXIT_CODE: 0/END'dir. `git diff --check` çıkış 0; eski migration/seed/paket/test dosyaları korunur.
+
+**Kapsam sınırı:** Çeyrek önerisi, gerçek eşik hesabı ve geç iade kuralları kullanıcı isteğiyle bu fazda yoktur. R-01'in kalan maddeleri, R-02 cari formülü ve R-03 sipariş geçişleri açık kalır. Sonraki faz için sipariş transaction'ı quote'u güvenilir fiyat kilidi saymadan backend'de yeniden hesaplamalıdır. Fiziksel cihaz/üretim kabulü ve gerçek backend ile yeni Android ekranlarının manuel uçtan uca incelemesi bu koşuda yapılmadı. Secret eklenmedi; commit/push/yayınlama yok.
+
 ## Faz 4 kapanışı — 8–9 Ekim 2026 Android kabulü
 
 **Faz 4 tamamlandı (yerel geliştirme ve Android emülatör kabulü).** PLAN'daki sıradaki açık iş, gerçek Android auth ekranları ve kalıcı oturum kabulüydü; bu kapsam tamamlandı. Faz 5 başlatılmadı. Başlangıç çalışma ağacı temizdi (`8619931`); Flutter, migration, seed ve test kodu değiştirilmedi. Aşağıdaki 7 Ekim “cihaz kabulü bekliyor” kayıtları tarihçedir.

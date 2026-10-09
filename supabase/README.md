@@ -1,5 +1,7 @@
 # Pekşen Gıda yerel backend
 
+**9 Ekim 2026 — Faz 5:** Yedinci migration `20261009000100_product_pricing.sql` eklendi. İlk altı migration ve iki seed korunur. Ürünler fiyatsız/pasif başlayabilir; Manager/Owner `change_product_price` ile history/audit üretip `activate_product` ile satışa açar. `create_product_draft`, `product_categories`, `product_reference_list`, `product_price_events` dar yetkili RPC'lerdir; ham yazmalar açılmaz. `quote_product(customer, unit, integer quantity)` fiyat/iskonto parametresi kabul etmez; exact dönüşüm ve snapshot, taban minimumu ve Istanbul yürürlük günü kullanır. Quote rezervasyon veya kalıcı sipariş değildir. `product_pricing_test.sql` yeni 73 regresyon içerir. Yerel reset/test sonuçları ve ilk ortam hatası docs/TESTING başındadır. Çeyrek önerisi veya ticari eşik eklenmedi.
+
 ## Kayıt/davet devamı — 7 Ekim 2026
 
 Güncel sözleşme F4-05/F4-06'dır. Altıncı migration `20261007000100_account_onboarding.sql` kayıt trigger'ı, private davet tablosu ve denetlenen davet/aktivasyon RPC'lerini ekler. 35 public tablo, önceki beş migration ve iki seed korunur. Ham yazmalar/anon erişimi açılmaz. E-posta sahipliği doğrulanır; müşteri profilinin aktif oluşması doğrulanmadan oturum açılabildiği anlamına gelmez. Owner-only pasifleştirme/yeniden açma, son Owner ve açık iş korumaları uygulanır.

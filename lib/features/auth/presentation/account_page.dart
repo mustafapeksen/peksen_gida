@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../domain/account_repository.dart';
 import 'auth_providers.dart';
+import '../../products/presentation/product_providers.dart';
 
 class AccountPage extends ConsumerStatefulWidget {
   const AccountPage({super.key});
@@ -86,6 +87,11 @@ class _AccountPageState extends ConsumerState<AccountPage>
                         const Text(
                           'Oturum açıldı. İş ekranları sonraki geliştirme fazlarında bağlanacak.',
                         ),
+                        if (canReadProducts(value.role))
+                          TextButton(
+                            onPressed: () => context.push('/account/products'),
+                            child: const Text('Ürünler ve birimler'),
+                          ),
                         TextButton(
                           onPressed: () => context.push('/account/password'),
                           child: const Text('Parola değiştir'),

@@ -10,6 +10,10 @@ import '../../features/auth/domain/account_lifecycle.dart';
 import '../../features/auth/presentation/onboarding_page.dart';
 import '../../features/auth/presentation/account_admin_page.dart';
 import '../../features/auth/presentation/password_page.dart';
+import '../../features/products/presentation/products_page.dart';
+import '../../features/products/presentation/price_page.dart';
+import '../../features/products/presentation/create_product_page.dart';
+import '../../features/products/presentation/quote_page.dart';
 import '../../features/preview/domain/role_menu.dart';
 import '../../features/preview/presentation/preview_page.dart';
 import '../../features/preview/presentation/role_menu_page.dart';
@@ -66,6 +70,26 @@ GoRouter createAppRouter({
         path: '/account',
         builder: (context, state) => const AccountPage(),
         routes: [
+          GoRoute(
+            path: 'products',
+            builder: (context, state) => const ProductsPage(),
+            routes: [
+              GoRoute(
+                path: ':productId/quote',
+                builder: (context, state) =>
+                    QuotePage(productId: state.pathParameters['productId']!),
+              ),
+              GoRoute(
+                path: 'new',
+                builder: (context, state) => const CreateProductPage(),
+              ),
+              GoRoute(
+                path: ':productId/price',
+                builder: (context, state) =>
+                    PricePage(productId: state.pathParameters['productId']!),
+              ),
+            ],
+          ),
           GoRoute(
             path: 'admin',
             builder: (context, state) => const AccountAdminPage(),
