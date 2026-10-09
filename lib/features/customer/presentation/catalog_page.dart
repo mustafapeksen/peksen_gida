@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
-import '../../auth/domain/account_repository.dart';
 import '../../auth/presentation/auth_providers.dart';
 import '../../products/domain/product_repository.dart'
     show formatDiscountPercent, formatKurus;
@@ -20,7 +19,7 @@ class ShopGuard extends ConsumerWidget {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (_, _) =>
             const Center(child: Text('Müşteri erişimi doğrulanamadı.')),
-        data: (p) => p?.role == AccountRole.customer
+        data: (p) => p?.role == ref.watch(shopAudienceProvider)
             ? child
             : const Center(child: Text('Bu ekran müşteri hesabı gerektirir.')),
       );
@@ -41,11 +40,11 @@ class _CatalogPageState extends ConsumerState<CatalogPage> {
       actions: [
         IconButton(
           tooltip: 'Siparişlerim',
-          onPressed: () => context.push('/account/shop/orders'),
+          onPressed: () => context.push('${ref.read(shopPathProvider)}/orders'),
           icon: const Icon(Icons.receipt_long),
         ),
         TextButton(
-          onPressed: () => context.push('/account/shop/cart'),
+          onPressed: () => context.push('${ref.read(shopPathProvider)}/cart'),
           child: const Text('Sepet'),
         ),
       ],
@@ -139,8 +138,9 @@ class _CatalogPageState extends ConsumerState<CatalogPage> {
                               ],
                             ),
                             trailing: const Icon(Icons.chevron_right),
-                            onTap: () =>
-                                context.push('/account/shop/product/${p.id}'),
+                            onTap: () => context.push(
+                              '${ref.read(shopPathProvider)}/product/${p.id}',
+                            ),
                           ),
                         ),
                     ],

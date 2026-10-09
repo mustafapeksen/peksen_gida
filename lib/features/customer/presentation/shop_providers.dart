@@ -6,12 +6,22 @@ import '../../auth/presentation/auth_providers.dart';
 import '../domain/shop_repository.dart';
 import '../data/supabase_shop_repository.dart';
 
+final shopAudienceProvider = Provider<AccountRole>(
+  (_) => AccountRole.customer,
+  dependencies: [],
+);
+final shopPathProvider = Provider<String>(
+  (_) => '/account/shop',
+  dependencies: [],
+);
+
 final shopRepositoryProvider = FutureProvider<ShopRepository>((ref) async {
   final client = await ref.watch(supabaseClientProvider.future);
   if (client == null) throw StateError('Backend unavailable');
   return SupabaseShopRepository(client);
 });
 final shopCustomerProvider = FutureProvider.autoDispose<String>(
+  dependencies: [],
   retry: (_, _) => null,
   (ref) async {
     final p = await ref.watch(accountProfileProvider.future);
@@ -22,6 +32,7 @@ final shopCustomerProvider = FutureProvider.autoDispose<String>(
   },
 );
 final catalogProvider = FutureProvider.autoDispose<List<CatalogProduct>>(
+  dependencies: [shopCustomerProvider],
   retry: (_, _) => null,
   (ref) async {
     final customer = await ref.watch(shopCustomerProvider.future);
@@ -31,6 +42,7 @@ final catalogProvider = FutureProvider.autoDispose<List<CatalogProduct>>(
 
 final cartProvider = NotifierProvider<CartController, List<CartLine>>(
   CartController.new,
+  dependencies: [shopAudienceProvider],
 );
 
 class CartController extends Notifier<List<CartLine>> {
@@ -40,7 +52,8 @@ class CartController extends Notifier<List<CartLine>> {
     ref.watch(authSessionProvider.select((s) => s.asData?.value.userId));
     ref.listen(accountProfileProvider, (_, next) {
       if (next.hasError ||
-          (next.hasValue && next.value?.role != AccountRole.customer)) {
+          (next.hasValue &&
+              next.value?.role != ref.read(shopAudienceProvider))) {
         state = [];
       }
     });

@@ -1,5 +1,17 @@
 # Pekşen Gıda — Karar kaydı
 
+### F7-01 — Yalnız aktif atama ile saha siparişi (9 Ekim 2026)
+
+Kullanıcı Faz 6'yı commit edilmiş/tamamlanmış kabul etti; Faz 7 kapsamını ve kesinti sonrası **yalnız atanmış + aktif müşteri** sınırını açıkça onayladı. Bu karar F4-02/F4-03/F6-01'in Sales için “atanmış veya oluşturduğu” ifadelerinden önce gelir.
+
+- Sales Operator'ın `created_by` olması tek başına müşteriyi, fiyatını veya siparişlerini okuma/yönetme ve adına sipariş oluşturma yetkisi vermez. Müşterinin aktif olması ve `assigned_sales_operator_id=auth.uid()` gerekir; çalışanın DB profili de aktif Sales olmalıdır. Atama kaldırıldığında veya müşteri pasifleştirildiğinde RLS ve ortak servis erişimi kapanır. Başarılı eski checkout cevabını replay etme de yetki kontrolünden geçer.
+- Dokuzuncu migration mevcut `private.sales_customer` yardımcısını daraltır. Mevcut RLS ve `quote_product`, katalog/sepet/taslak/checkout RPC'leri aynı yardımcıya bağlı olduğundan sınır yalnız ekranda uygulanmaz. `sales_checkout_customers` seçici için sadece ID/firma adını döndürür. Yeni genel SELECT/ham yazma izni yoktur; diğer rollerin sınırları genişletilmez.
+- Eski Sales müşteri oluşturma RPC'si kaldırılmadı, otomatik atama da eklenmedi. Oluşturduğu atanmamış kuruluş, Owner/Manager mevcut atama işlemini yapana kadar Sales için kapalıdır. Bu faz yeni müşteri/atama yönetimi ekranı getirmez.
+- Sales müşteri seçip **aynı Faz 6 repository/RPC ve katalog/ürün/birim/sepet/taslak/gönderim ekranlarını** kullanır. Kalıcı başlık hangi müşteri adına işlem yapıldığını gösterir. Fiyat/iskonto/dönüşüm/minimum, exact snapshot, half-up, stok rezervasyonu, değişiklikte açık yeniden onay ve idempotency sözleşmesi değişmez. `source=sales_operator`, `created_by=auth.uid()` sunucuda türetilir; Customer için `customer_app` kalır.
+- Her aktör/müşteri için ayrı Riverpod scope vardır. Müşteriden çıkınca kaydedilmemiş bellek sepeti temizlenir; UI bunu açıkça bildirir. Sunucu taslağı ve şifreli bekleyen gönderim kaydı mevcut aktör/müşteri ayrımını korur. Başka müşteriye önceki sepet/fiyat/istek anahtarı taşınmaz. Atamayı yenile eylemi görünür veriyi tekrar doğrular; gerçek işlem anında her RPC güncel yetkiyi ayrıca kontrol eder. Realtime yetki yenilemesi eklenmez.
+
+**Açık kalanlar:** R-02 cari/exposure/vade hesabı, R-01 çeyrek/iskonto eşikleri/geç iade ve R-03 yönetici onayından sonra stok/geçiş davranışları değişmedi. `not_evaluated` yalnız uyarıdır, borç/tahsilat veya limit onayı değildir. Yeni ticari formül/durum geçişi yok. Faz 8 başlamaz.
+
 ### F6-01 — Customer katalog/sepet/gönderim sınırı (9 Ekim 2026)
 
 Kullanıcı Faz 5'i commit edilmiş ve tamamlanmış kabul edip Faz 6'yı yetkilendirdi. Son onaylar:

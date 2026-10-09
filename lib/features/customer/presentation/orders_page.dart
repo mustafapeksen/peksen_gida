@@ -7,6 +7,7 @@ import 'shop_providers.dart';
 
 final customerOrdersProvider =
     FutureProvider.autoDispose<List<Map<String, dynamic>>>(
+      dependencies: [shopCustomerProvider],
       retry: (_, _) => null,
       (ref) async {
         final customer = await ref.watch(shopCustomerProvider.future);

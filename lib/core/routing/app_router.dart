@@ -15,6 +15,7 @@ import '../../features/products/presentation/price_page.dart';
 import '../../features/products/presentation/create_product_page.dart';
 import '../../features/products/presentation/quote_page.dart';
 import '../../features/customer/presentation/catalog_page.dart';
+import '../../features/sales/presentation/sales_customers_page.dart';
 import '../../features/customer/presentation/product_detail_page.dart';
 import '../../features/customer/presentation/cart_page.dart';
 import '../../features/customer/presentation/orders_page.dart';
@@ -74,6 +75,40 @@ GoRouter createAppRouter({
         path: '/account',
         builder: (context, state) => const AccountPage(),
         routes: [
+          GoRoute(
+            path: 'sales',
+            builder: (context, state) => const SalesCustomersPage(),
+            routes: [
+              ShellRoute(
+                builder: (context, state, child) => SalesShopScope(
+                  customerId: state.pathParameters['customerId']!,
+                  child: child,
+                ),
+                routes: [
+                  GoRoute(
+                    path: ':customerId',
+                    builder: (context, state) => const CatalogPage(),
+                    routes: [
+                      GoRoute(
+                        path: 'product/:id',
+                        builder: (context, state) => ProductDetailPage(
+                          productId: state.pathParameters['id']!,
+                        ),
+                      ),
+                      GoRoute(
+                        path: 'cart',
+                        builder: (context, state) => const CartPage(),
+                      ),
+                      GoRoute(
+                        path: 'orders',
+                        builder: (context, state) => const CustomerOrdersPage(),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ],
+          ),
           GoRoute(
             path: 'shop',
             builder: (context, state) => const CatalogPage(),

@@ -1,5 +1,7 @@
 # Pekşen Gıda
 
+**Faz 7:** Sales Operator hesabında “Müşteri adına sipariş” yalnız atanmış aktif müşterileri listeler. Seçilen müşterinin adı ortak katalog/sepet ekranının üstünde görünür. Müşteriden çıkarken kaydedilmemiş sepet temizlenir; sunucu taslağı ve bekleyen gönderim müşteriye/aktöre özeldir. Oluşturucu olmak tek başına erişim sağlamaz. Customer akışı ve Faz 6 hesapları korunur; son kabul [TESTING](docs/TESTING.md), yetki değişikliği F7-01'dedir.
+
 **Faz 6 (9 Ekim 2026):** Customer hesabında “Katalog ve sepet” üzerinden ürün/birim/miktar, sunucuda taslak ve açık fiyat onaylı gönderim bulunur; kendi siparişleri katalogdaki fiş simgesindedir. Fiyat/dönüşüm/stok farkı yeni onay gerektirir. Yeterli stokta rezervasyon, yetersiz stokta yönetici onay isteği oluşur. Cari kontrol henüz hesaplanmaz ve gönderim borç/tahsilat üretmez. Sales UI Faz 7'ye bırakıldı. Son doğrulamalar [TESTING](docs/TESTING.md), teknik sınırlar F6-01'dedir.
 
 **Faz 5 — 9 Ekim 2026:** Hesabım → Ürünler ve birimler üzerinden Warehouse/Manager/Owner taslak ürün ve satış birimleri oluşturabilir. Fiyatı belirleme, geçmişi okuma, satışa açma ve müşteri fiyatı hesaplama yalnız Manager/Owner ekranlarındadır. Warehouse/Accounting fiyat sınırları korunur. Fiyat hesabı Supabase RPC'sindedir; sepet/sipariş/stok rezervasyonu ve çeyrek önerisi eklenmedi. Yedinci migration gerekir; yerel kurulum ve son testler [TESTING](docs/TESTING.md), onaylı kurallar [F5-01](docs/DECISIONS.md) içindedir. Bu özellikler debug rol önizlemesinden ayrı gerçek oturum ister.

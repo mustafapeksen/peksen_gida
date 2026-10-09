@@ -58,7 +58,7 @@ class _ProductDetailPageState extends ConsumerState<ProductDetailPage> {
         return;
       }
       ref.read(cartProvider.notifier).setLine(line);
-      context.push('/account/shop/cart');
+      context.push('${ref.read(shopPathProvider)}/cart');
     } catch (_) {
       if (mounted) {
         setState(

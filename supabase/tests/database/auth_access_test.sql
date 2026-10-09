@@ -26,8 +26,20 @@ insert into delivery_stops(run_id,order_id,sequence,status,assigned_by)
  '30000000-0000-4000-8000-000000000006');
 
 select ok(not exists(select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace
- where n.nspname='private' and (not p.prosecdef or not (p.proconfig @> array['search_path=""']))),
- 'Private helpers use SECURITY DEFINER with fixed empty search path');
+ where n.nspname='private' and ((not p.prosecdef and p.oid not in
+   ('private.normalized_cart(jsonb)'::regprocedure,'private.protect_exact_price_snapshot()'::regprocedure))
+   or not (p.proconfig @> array['search_path=""']))),
+ 'Private authorization helpers use SECURITY DEFINER; every helper has fixed empty search path');
+-- Phase 6 introduced a pure input normalizer: it deliberately has no definer
+-- privileges. Check its narrower contract rather than demanding escalation.
+select ok((select not prosecdef and provolatile='i' from pg_proc where oid='private.normalized_cart(jsonb)'::regprocedure)
+ and not has_function_privilege('anon','private.normalized_cart(jsonb)','EXECUTE')
+ and not has_function_privilege('authenticated','private.normalized_cart(jsonb)','EXECUTE'),
+ 'Pure normalizer is immutable invoker and cannot be called by API roles');
+select ok((select not prosecdef and prorettype='trigger'::regtype from pg_proc where oid='private.protect_exact_price_snapshot()'::regprocedure)
+ and not has_function_privilege('anon','private.protect_exact_price_snapshot()','EXECUTE')
+ and not has_function_privilege('authenticated','private.protect_exact_price_snapshot()','EXECUTE'),
+ 'Exact snapshot trigger remains invoker with no API execute grant');
 set local role anon;
 select throws_ok($$select * from customers$$,'42501',null::text,'Anon cannot read customers');
 select throws_ok($$select private.current_app_role()$$,'42501',null::text,'Anon cannot execute helpers');
@@ -118,7 +130,7 @@ select throws_ok($$select update_customer_contact('31000000-0000-4000-8000-00000
 select throws_ok($$select assign_customer_sales('31000000-0000-4000-8000-000000000002',auth.uid())$$,'42501',null::text,'Sales cannot claim unassigned customer');
 select lives_ok($$select update_customer_contact('31000000-0000-4000-8000-000000000001','Assigned test',null,null,null,null)$$,'Sales manages assigned contact details');
 select lives_ok($$select create_customer_record('Sales created fixture')$$,'Sales can create customer with server provenance');
-select is((select count(*) from customers),2::bigint,'Sales also sees its own created customer');
+select is((select count(*) from customers),1::bigint,'Unassigned creator-only customer is hidden (F7-01)');
 select throws_ok($$update customers set credit_limit_kurus=999999$$,'42501',null::text,'Sales cannot change credit fields directly');
 reset role;
 select set_config('request.jwt.claim.sub','50000000-0000-4000-8000-000000000009',true);
@@ -150,7 +162,7 @@ select throws_ok($$select assign_customer_sales('31000000-0000-4000-8000-0000000
 reset role;
 select set_config('request.jwt.claim.sub','30000000-0000-4000-8000-000000000002',true);
 set local role authenticated;
-select is((select count(*) from customers),1::bigint,'Reassigned customer removed; created customer remains');
+select is((select count(*) from customers),0::bigint,'Reassigned and creator-only customers are hidden (F7-01)');
 select is((select count(*) from orders),0::bigint,'Reassignment revokes previous Sales order access immediately');
 reset role;
 select set_config('request.jwt.claim.sub','30000000-0000-4000-8000-000000000007',true);

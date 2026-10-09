@@ -1,5 +1,23 @@
 # Pekşen Gıda ilerleme kaydı
 
+## Faz 7 — 9 Ekim 2026, Sales müşteri seçimi ve ortak checkout
+
+**Faz 7 tamamlandı — F7-01 kapsamında yerel geliştirme kabulü.** Başlangıç HEAD `a001244` (Faz 6 kabulü). Kesinti öncesi routing, scoped provider, Sales ekranı ve migration değişiklikleri korundu; mevcut fiyat/checkout servisi yeniden yazılmadı. F7-01 son kullanıcı yetki kararını kaydeder.
+
+- Sales hesabında “Müşteri adına sipariş” → atanmış aktif müşteri → ortak katalog/ürün/birim/sepet/taslak/gönderim. Müşteri adı başlıkta sabittir. Farklı müşterilerde sepet ve fiyat state'i ayrı scope'tadır; kaydedilmiş taslak/yarım gönderim Faz 6'nın aktör/müşteri ayrımını kullanır.
+- Oluşturucu olmak tek başına erişim vermez. Yeni migration RLS ve ortak RPC'nin kullandığı yardımcıyı aktif atamaya daraltır; picker RPC yalnız ID/firma adı verir. Pasif/atanmamış/başka Sales'e atanmış müşteriler ve pasif/yetkisiz aktörler reddedilir. Customer kendi kuruluşuyla çalışmayı sürdürür; fiyat yönetimi/Accounting/Warehouse yetkileri değişmez.
+- Sales siparişinin source/created_by alanları server tarafından türetilir. Exact fiyat/snapshot, integer miktar/minimum, dönüşüm, stok rezervasyonu ve yeniden onay Faz 6 koduyla aynıdır. Cari/exposure/borç/çeyrek veya sonraki onay-stok işlemi eklenmedi.
+
+**Kanıt:** pub get 0, analyze 0; Flutter tam koşu **142/142 / 0** (130 mevcut + 12 yeni); sonradan eklenen doğrudan müşteri/sepet adresi değişimi regresyonu **1/1 / 0** (toplam 143 farklı test); reset **0** (9 migration + 2 seed); yeni Sales **50/50**, Customer checkout **94/94**, fiyat **73/73**, auth erişimi **119/119**, scoped erişim **85/85**, hepsi **0** (toplam 421 DB assertion). Debug build **0** (18,5 saniye); emulator-5554 Customer + Sales integration **2/2 / 0**. Normal APK `build/app/outputs/flutter-apk/peksen-gida-phase7-debug.apk` (**238.063.733 bayt**). `git diff --check` 0. Son eklenen tek test uygulama kodunu değiştirmedi; geçmiş başarılı tam koşu/build gereksiz yere tekrarlanmadı, son analyze temiz. Faz 3 identity/business ve ilgisiz onboarding testleri bu tur yeniden çalıştırılmadı.
+
+**Faz 7 kabul ölçütleri:** Aktif atanmış müşteri seçimi ve RLS/servis retleri DB testli; aynı Faz 6 fiyat/sepet/snapshot/rezervasyon/yeniden onay kullanılır; source/created_by sunucuda doğru kaydedilir. Customer ve preview regresyonları geçer. Müşteri değişiminde sepet/fiyat/taslak ayrımı ve Android geri akışı doğrulandı. Manuel görsel veya gerçek backend ile Android uçtan uca doğrulaması iddia edilmez.
+
+**Dosyalar:** `lib/features/sales/{domain,data,presentation}`, router/hesap menüsü, ortak shop provider/catalog/product detail/orders bağlamları; yeni `20261009000300_sales_checkout.sql`, `sales_checkout_test.sql`, Flutter `sales_checkout_test.dart`, Android `sales_checkout_smoke_test.dart`; auth_access_test.sql ve belgeler. İlk sekiz migration, iki seed, Faz 6 quote/checkout SQL'i, Dart fiyat/checkout repository'si, eski Flutter testleri, pubspec/lock ve .env korunur.
+
+**Test düzeltmeleri:** Auth erişiminin iki creator-only beklentisi son kullanıcı kararına göre daraltıldı; eski genel “bütün private fonksiyonlar definer” varsayımı Faz 5 snapshot trigger'ı ve Faz 6 saf normalizer için geçerli değildi. Bu iki fonksiyonun invoker/istemci execute kapalı sözleşmesine iki ayrı assertion eklendi; diğer yardımcılar fixed search_path/definer kontrolünde kalır. Dar ekran testi lazy alanı kaydırır ve gerçekten tıklanabilir eylemle sepete eklenmesini doğrular; go_router'ın imperative push için değişmeyebilen browser URI'si yerine görünen sepet/kalem/müşteri kontrol edilir.
+
+**Kapsam ve açık işler:** F7-01; R-01/R-02/R-03 hâlâ açık. Manuel görsel, gerçek Supabase ile Sales Android uçtan uca, uygulama öldürme/oturum devamı, gerçek cihaz ve çok bağlantılı stok stres kontrolü bu tur yapılmadı. Otomatik widget/DB/native smoke farklı kanıtlardır. Faz 8'e geçilmedi; secret ekleme, commit/push/yayınlama yok.
+
 ## Faz 6 — 9 Ekim 2026, Customer katalog ve ortak checkout
 
 **Faz 6 tamamlandı — F6-01 ile onaylanan Customer kapsamı.** Faz 1–5 kabulü korunur; başlangıç HEAD `39a1317`. Kesinti öncesindeki katalog/sepet dosyaları yeniden oluşturulmadan tamamlandı. F6-01 son kullanıcı onaylarını ve mevcut B-01/B-02 davranışını birleştirir; Faz 7 başlamadı.

@@ -1,5 +1,32 @@
 # Pekşen Gıda doğrulama ve test planı
 
+## Faz 7 doğrulaması — 9 Ekim 2026
+
+| Komut | Sonuç | Çıkış |
+| --- | --- | ---: |
+| `flutter pub get` | Başarılı; paket/lock değişmedi | 0 |
+| `flutter analyze` | No issues found | 0 |
+| `flutter test --reporter expanded` | 142/142; 130 mevcut + 12 yeni | 0 |
+| `flutter test test/sales_checkout_test.dart --plain-name "Direct customer switch" --reporter expanded` | Son eklenen regresyon 1/1; toplam 143 farklı Flutter testi | 0 |
+| `flutter build apk --debug` | Built app-debug.apk; 18,5 saniye | 0 |
+| `npx.cmd --yes supabase@2.119.0 db reset --local` | 9 migration + iki seed | 0 |
+| Aynı CLI `test db --local supabase/tests/database/sales_checkout_test.sql` | 50/50 PASS | 0 |
+| Aynı komutla `customer_checkout_test.sql` | 94/94 PASS | 0 |
+| Aynı komutla `product_pricing_test.sql` | 73/73 PASS | 0 |
+| Aynı komutla `auth_access_test.sql` | 119/119 PASS | 0 |
+| Aynı komutla `account_scope_test.sql` | 85/85 PASS | 0 |
+| `flutter test integration_test/customer_checkout_smoke_test.dart integration_test/sales_checkout_smoke_test.dart -d emulator-5554` | Customer + Sales 2/2 PASS | 0 |
+
+**Son kabul:** F7-01 kapsamındaki Faz 7 tamamlandı. Native smoke, gerçek Android emülatöründe fixture repository ile Customer ve Sales akışlarını çalıştırdı; DB yetkileri ayrı pgTAP kanıtıdır. Normal APK integration öncesi `build/app/outputs/flutter-apk/peksen-gida-phase7-debug.apk` olarak korundu: **238.063.733 bayt**. Build/integration logları Built/All tests passed, EXIT_CODE: 0 ve END içerir. Public config verilmeden derlendi; .env değiştirilmedi.
+
+**DB kapsamı:** 421 assertion; yeni Sales paketi aktif atama, creator-only ret, pasif müşteri/aktör, RLS müşteri/sipariş/fiyat gizleme, atama kaldırma/reassignment, replay yetkisi, taslak aktör ayrımı, raw yazma reddi, Customer ile aynı quote, eski fiyatta sıfır yazma, açık yeniden onay, snapshot, tek rezervasyon/history/audit ve sunucunun source/created_by üretimini doğrular. Yeni yetki F7-01'e göre eski auth paketindeki iki creator beklentisi daraltıldı. Normalizer/snapshot trigger'ın invoker ve kapalı EXECUTE sınırlarına iki assertion eklendi (117 → 119). Faz 3 identity/business, lifecycle/client Auth paketleri etkilenmediğinden bu tur tekrarlanmadı; geçmiş başarıları bu koşunun sonucu değildir.
+
+**Flutter kapsamı:** 130 eski + 13 yeni = 143 farklı test. Tam koşudaki 142 testten sonra yalnız yeni doğrudan müşteri/sepet URL değişimi testi eklendi ve 1/1 geçti; uygulama kodu değişmediğinden başarılı build/tam test tekrar edilmedi. Son analyze 0. Sales liste/yükleniyor/hata/boş, altı diğer rol ret, tahmin edilen müşteri rotası, atamayı yenilemede verinin kalkması, müşteri değişiminde sepet ve taslak ayrımı, ortak fiyat onayı/gönderim, geri gezinme ve 320×568/klavye koşulunda gerçekten sepete ekleme. Mevcut 130 test (Customer, SDK retry, auth, preview, ürün/fiyat) korunur. Yeni integration smoke aynı Customer bileşenlerini gerçek Android widget/gezinti ortamında fixture repository ile çalıştırır; gerçek backend uçtan uca testi değildir.
+
+**Kanıt ve düzeltmeler:** `build/phase7-validation-20261009/*.log` komut/bitiş/çıkış kodlarını taşır. İlk auth SQL koşusu eski geniş definer varsayımını yakaladı; ilk hata logu korundu. İlk küçük ekran testi lazy TextField bulamadı; kaydırma ve gerçek hit-test/sonuç assertionları ile düzeltildi. Başarısız ara koşular son kabul sayılmadı. Secret/.env okunmadı veya loglanmadı; yalnız sentetik yerel DB kullanıldı.
+
+**Yapılmayanlar:** Manuel Android görsel inceleme, gerçek backend ile Sales saha akışının cihazda uçtan uca kontrolü, process-kill/kalıcı oturumun yeniden kabulü, gerçek cihaz/üretim ve çok bağlantılı stok stres testi. Cari/exposure, çeyrek/iskonto eşikleri ve yönetici onayından sonra stok/geçiş mantığı uygulanmadı/test edilmedi; F7-01 ve R-01–R-03 açık sınırlarıdır.
+
 ## Faz 6 doğrulaması — 9 Ekim 2026
 
 | Komut | Sonuç | Çıkış |
