@@ -1,5 +1,23 @@
 # Pekşen Gıda — Karar kaydı
 
+### F6-01 — Customer katalog/sepet/gönderim sınırı (9 Ekim 2026)
+
+Kullanıcı Faz 5'i commit edilmiş ve tamamlanmış kabul edip Faz 6'yı yetkilendirdi. Son onaylar:
+
+- Arayüz yalnız Customer içindir. Ortak Customer/Sales backend servisi hazırlanır; Sales müşteri seçimi ve saha ekranı **Faz 7'ye** kalır. Yetki canlı DB profil/üyelik/atama kontrolünden gelir; preview yetki sağlamaz.
+- Cari formül/exposure R-02 netleşene kadar **kesin borç/tahsilat hesabı yapılmaz**. Yeni siparişte `payment_status=not_due`, `credit_check_state=not_evaluated`, `credit_warning=true` yalnız hesaplanmamış kontrol uyarısıdır; limit aşımı sonucu veya cari onayı değildir. Borç, vade, ödeme, exposure değeri veya eşik uydurulmaz. UI gönderimden önce ve sonra bu sınırı gösterir. Eski siparişlerde yeni alan NULL'dır; geçmişe dönük hesap yapılmaz.
+- B-01/B-02'nin mevcut normal davranışı korunur: stok yeterliyse `submitted` ve yalnız rezervasyon; yetersiz/tanımsız stokta `pending_approval`, Manager/Owner için talep ve **hiç rezervasyon yok**. Kısmi rezervasyon/picking, yönetici onay/ret ekranı, iptal, teslimat ve ödeme yapılmaz. Yeni durum adı veya geçiş matrisi eklenmez. Stok yetersizliği onaylandıktan sonraki işlem R-03'te açıktır.
+- Fiyat, iskonto, dönüşüm veya stok yeterliliği değiştiyse sunucu **hiç sipariş/rezervasyon yazmadan** `changed` ve önceki/güncel quote döndürür. Kalem birim fiyatı/dönüşümü ve toplam farkı gösterilir; ayrı “Güncel fiyatı onayla ve gönder” eylemi gerekir. Yeni onay sırasında tekrar değişirse aynı denetim tekrarlanır. Client quote'u tutar kaynağı değildir; sunucu F5-01 `quote_product` hesabını yeniden yürütür.
+- Liste fiyatı/minimum taban birimde, satış miktarı pozitif integer, dönüşüm exact ve yuvarlamasızdır. Yalnız kalem sonunda half-up; sipariş toplamı yuvarlanmış kalemlerin toplamıdır. Exact final/list unit snapshot ve legacy gösterim snapshotı birlikte saklanır. Çeyrek önerisi/eşik/geç iade yapılmaz.
+
+**Teknik taslak ve işlem sözleşmesi:** Düzenlenebilir taslak, `private.cart_drafts` içinde aktör + müşteri başına bir sepet (yalnız birim/miktar) olarak saklanır. Henüz ticari sipariş veya değişmez fiyat snapshotı değildir; stok ayırmaz, fiyat sabitlemez. Taslak yüklenince güncel katalog/fiyat denetlenir; silinmiş/pasif ürün sessizce atılmaz. Kesin sipariş ve snapshotlar yalnız açık fiyat onayından sonra tek transaction'da oluşur. Başarılı gönderim yalnız aynı içerikli taslağı temizler; diğer cihazdan daha yeni kaydı silmez.
+
+**R-06'nın bu dilimi:** Auth → profil → request_key advisory → müşteri → sıralı kategori/ürün/birim → fiyatlama tablosu SHARE → sıralı inventory FOR UPDATE kilitleri; kilitlerden sonra yeniden fiyat/stok hesabı. Aynı ürünün farklı birimleri stok talebinde birleştirilir. Şimdilik dar fiyatlama tablosu SHARE kilidi eksik iskonto satırına eşzamanlı eklemeyi de engeller; ileriki iskonto yazma servisi öncesi aynı kilit sözleşmesi ve performans yeniden değerlendirilmelidir. Aynı aktör/müşteri/normalize sepet/onay ve UUID aynı cevabı döndürür; farklı payload anahtarı reddedilir. Yetki replay öncesi yeniden denetlenir. Sipariş/kalem, rezervasyon hareketi, history/audit ve private receipt atomiktir. Ham tablo yazması veya yeni genel SELECT policy açılmaz.
+
+İstemci bilinmeyen gönderim sonucunu proje/kullanıcı/müşteri anahtarında mevcut şifreli depoya kaydeder; uygulama yeniden oluşturulunca aynı anahtar ve onayla devam eder. Bu **offline sipariş** değildir. Bilinen SQL rollback cevabı düzeltmeye izin verir; belirsiz ağ sonucu başka payload ile gönderilemez. SQL snapshot/receipt ve Flutter fixture/yerel SDK transport testleri ayrı kanıtlardır.
+
+**Kalan kararlar:** R-02 cari/exposure/varsayılan vade; R-03 stok eksiğinde yönetici onayı sonrası rezervasyon ve sonraki geçişler; R-01 çeyrek/eşik/geç iade hâlâ açıktır. Üretim yükü ve çok bağlantılı eşzamanlılık stres kabulü bu tur yapılmaz. Customer dışındaki yeni arayüz/yetki eklenmez.
+
 ### F5-01 — Onaylı ürün/birim/fiyat kapsamı (9 Ekim 2026)
 
 Kullanıcının bu görevdeki kesin kararları, SPEC'in tarihsel Warehouse/Accounting fiyat yetkisi ve B-05/R-04 belirsizliğinden önce gelir:

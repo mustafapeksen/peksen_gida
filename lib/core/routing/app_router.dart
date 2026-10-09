@@ -14,6 +14,10 @@ import '../../features/products/presentation/products_page.dart';
 import '../../features/products/presentation/price_page.dart';
 import '../../features/products/presentation/create_product_page.dart';
 import '../../features/products/presentation/quote_page.dart';
+import '../../features/customer/presentation/catalog_page.dart';
+import '../../features/customer/presentation/product_detail_page.dart';
+import '../../features/customer/presentation/cart_page.dart';
+import '../../features/customer/presentation/orders_page.dart';
 import '../../features/preview/domain/role_menu.dart';
 import '../../features/preview/presentation/preview_page.dart';
 import '../../features/preview/presentation/role_menu_page.dart';
@@ -70,6 +74,25 @@ GoRouter createAppRouter({
         path: '/account',
         builder: (context, state) => const AccountPage(),
         routes: [
+          GoRoute(
+            path: 'shop',
+            builder: (context, state) => const CatalogPage(),
+            routes: [
+              GoRoute(
+                path: 'orders',
+                builder: (context, state) => const CustomerOrdersPage(),
+              ),
+              GoRoute(
+                path: 'product/:id',
+                builder: (context, state) =>
+                    ProductDetailPage(productId: state.pathParameters['id']!),
+              ),
+              GoRoute(
+                path: 'cart',
+                builder: (context, state) => const CartPage(),
+              ),
+            ],
+          ),
           GoRoute(
             path: 'products',
             builder: (context, state) => const ProductsPage(),

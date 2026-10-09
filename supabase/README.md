@@ -1,5 +1,7 @@
 # Pekşen Gıda yerel backend
 
+**Faz 6 — Customer checkout:** Sekizinci migration `20261009000200_customer_checkout.sql`; `customer_catalog`, `quote_cart`, `save_cart_draft`, `load_cart_draft`, `checkout_cart` yalnız mevcut Customer/Sales kapsamı içinde çalışır. `private.cart_drafts` ve `private.checkout_receipts` istemciye açık değildir. `orders.credit_check_state=not_evaluated` kesin borç/cari sonucu değildir. Yeni `customer_checkout_test.sql` 94 assertion içerir. Yerel reset sonrası `npx.cmd --yes supabase@2.119.0 test db --local supabase/tests/database/customer_checkout_test.sql` çalıştırılır. Fiyat/minimum/exact snapshot sözleşmesi F5-01, transaction/rezervasyon/yeniden onay F6-01'de; mevcut public ham yazma/RLS sınırları korunur.
+
 **9 Ekim 2026 — Faz 5:** Yedinci migration `20261009000100_product_pricing.sql` eklendi. İlk altı migration ve iki seed korunur. Ürünler fiyatsız/pasif başlayabilir; Manager/Owner `change_product_price` ile history/audit üretip `activate_product` ile satışa açar. `create_product_draft`, `product_categories`, `product_reference_list`, `product_price_events` dar yetkili RPC'lerdir; ham yazmalar açılmaz. `quote_product(customer, unit, integer quantity)` fiyat/iskonto parametresi kabul etmez; exact dönüşüm ve snapshot, taban minimumu ve Istanbul yürürlük günü kullanır. Quote rezervasyon veya kalıcı sipariş değildir. `product_pricing_test.sql` yeni 73 regresyon içerir. Yerel reset/test sonuçları ve ilk ortam hatası docs/TESTING başındadır. Çeyrek önerisi veya ticari eşik eklenmedi.
 
 ## Kayıt/davet devamı — 7 Ekim 2026

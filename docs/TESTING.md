@@ -1,5 +1,32 @@
 # Pekşen Gıda doğrulama ve test planı
 
+## Faz 6 doğrulaması — 9 Ekim 2026
+
+| Komut | Sonuç | Çıkış |
+| --- | --- | ---: |
+| `flutter pub get` | Bağımlılık/lock değişmedi | 0 |
+| `flutter analyze` | No issues found | 0 |
+| `flutter test --reporter expanded` | 130/130; 113 eski + 17 yeni | 0 |
+| `flutter build apk --debug` | Built app-debug.apk; 41,4 saniye | 0 |
+| `npx.cmd --yes supabase@2.119.0 db reset --local` | Sekiz migration + iki seed | 0 |
+| `npx.cmd --yes supabase@2.119.0 test db --local supabase/tests/database/customer_checkout_test.sql` | 94/94 PASS | 0 |
+| Aynı CLI ile `product_pricing_test.sql` | 73/73 PASS | 0 |
+| Aynı CLI ile `business_foundation_test.sql` | 140/140 PASS | 0 |
+| Aynı CLI ile `account_scope_test.sql` | 85/85 PASS | 0 |
+| `flutter test integration_test -d emulator-5554` | 3/3 PASS: preview, Customer checkout, ürün yönetimi | 0 |
+
+**Son durum:** F6-01 kapsamındaki Faz 6 kabulü tamamlandı. Yeni Customer Android smoke ürün/birim/miktar → sepet → değişen fiyatı ikinci kez onaylama → sonuç → sistem geri akışını sınar; mevcut iki smoke korunur. Test süreci bitişi `All tests passed / EXIT_CODE: 0 / END` ile kayıtlıdır. Kurulumlar arasında yapılan ayrı ADB activity sorgusu/başlatma denemesi paket yokken sonuç vermedi; manuel açılış/görsel kabul diye sayılmadı.
+
+**APK:** Normal build integration öncesi `build/app/outputs/flutter-apk/peksen-gida-phase6-debug.apk` olarak korundu: **238.055.769 bayt**. Build başarı kanıtı logdaki Built / EXIT_CODE: 0 / END kaydıdır. Bu normal build public config verilmeden üretildi; .env değiştirilmedi.
+
+**Kapsam:** 392 ilgili DB assertion. Customer/Sales ayrımı, pasif/anon/Warehouse/Accounting retleri; client fiyat/iskonto reddi, integer/minimum, farklı birimlerin stok talebinin birleştirilmesi, fiyat/dönüşüm/stok farkında sıfır yazma ve yeniden onay, aynı key replay, farklı payload ret, exact 0.125 kuruş snapshot, half-up kalem toplamlarının toplanması, normal rezervasyon, stok eksiğinde sıfır rezervasyon, history/audit ve son adım hatasında tam rollback. Eski migration/seed/testler değiştirilmedi; ilgisiz Phase4 onboarding testleri tekrar çalıştırılmadı.
+
+**Flutter:** katalog/ürün/sepet/Customer rol koruması; min/pozitif integer; değişen fiyatı ikinci kez açık onaylama; taslak yükleme ve miktarda quote temizliği; küçük ekran/klavye; geri ve boş/hata/yükleniyor. SDK transport testi gerçek Supabase Dart SDK'sını yalnız sentetik loopback HTTP sunucusuna karşı kullanır; bilinmeyen cevapta şifreli depoda anahtar koruma, kullanıcı/müşteri izolasyonu, yeniden oluşturma ve kesin SQL ret sonrası düzeltme testlidir. Bu testte secure-storage platformu mock'tur; yeni checkout için Android process-kill veya gerçek backend UI kabulü sayılmaz.
+
+**Koşu kayıtları:** `build/phase6-validation-20261009/*.log` komut/bitiş/çıkış taşır. İlk DB koşusu taslak temizliğindeki belirsiz `items` alanını buldu; nitelikli sütunla düzeltildi. Sonraki yeni testte pgTAP domain/numeric overload cast'i düzeltildi. İlk analyze lint'leri giderildi. SDK transport fixture'ında Flutter HTTP mock'u açık loopback override ile ayrıldı; assertion kaldırılmadı. İlk başarısız DB/analyze logları da korunur. Geçmiş 81 testlik ara koşu son kabul değildir; 94 testlik son dosya geçti.
+
+**Sınırlar:** Android smoke fixture repository ile native UI/yönlendirme kabulüdür; gerçek Supabase yetkileri ayrı DB paketinde doğrulanır. Üretim/gerçek cihaz, yeni ekranların manuel görsel kabulü ve çok bağlantılı rezervasyon stres testi yapılmadı. Cari tutar/borç/exposure, çeyrek ve sonraki stok/onay iş akışları test kapsamına alınmadı; uygulanmadı.
+
 ## Faz 5 doğrulaması — 9 Ekim 2026
 
 | Komut | Sonuç | Çıkış |

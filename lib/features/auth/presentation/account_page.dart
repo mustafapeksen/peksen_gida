@@ -92,6 +92,11 @@ class _AccountPageState extends ConsumerState<AccountPage>
                             onPressed: () => context.push('/account/products'),
                             child: const Text('Ürünler ve birimler'),
                           ),
+                        if (value.role == AccountRole.customer)
+                          TextButton(
+                            onPressed: () => context.push('/account/shop'),
+                            child: const Text('Katalog ve sepet'),
+                          ),
                         TextButton(
                           onPressed: () => context.push('/account/password'),
                           child: const Text('Parola değiştir'),

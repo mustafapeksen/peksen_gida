@@ -1,5 +1,23 @@
 # Pekşen Gıda ilerleme kaydı
 
+## Faz 6 — 9 Ekim 2026, Customer katalog ve ortak checkout
+
+**Faz 6 tamamlandı — F6-01 ile onaylanan Customer kapsamı.** Faz 1–5 kabulü korunur; başlangıç HEAD `39a1317`. Kesinti öncesindeki katalog/sepet dosyaları yeniden oluşturulmadan tamamlandı. F6-01 son kullanıcı onaylarını ve mevcut B-01/B-02 davranışını birleştirir; Faz 7 başlamadı.
+
+- Customer katalog/kategori, stok yok görünümü, ürün/birim/miktar, minimum kontrolü, müşteri fiyatı, sepet, sunucuda taslak kaydet/yükle, açık fiyat onayı, sipariş sonucu ve kendi kayıtlarını okuma ekranları eklendi. Yükleniyor/boş/hata/yeniden dene, küçük ekran-klavye ve geri gezinme testlidir.
+- Ortak `customer_catalog`, `quote_cart`, `save_cart_draft`, `load_cart_draft`, `checkout_cart` RPC'leri: Customer kendi kuruluşu, Sales yalnız mevcut atanmış/oluşturucu kapsamı. Sales ekranı yok. Warehouse/Accounting fiyat ve yazma sınırları, Manager/Owner fiyat yönetimi ve debug preview korunur.
+- Gönderimde güncel fiyat/dönüşüm/iskonto ve stok yeterliliği karşılaştırılır; farkta hiçbir yazma olmadan eski/güncel quote ve yeniden onay istenir. Tek transaction exact snapshot, toplam, history/audit ve yeterli stokta rezervasyon üretir. Stok eksiğinde mevcut pending_approval + talep vardır; rezervasyon yok. Fiziksel stok/picking/borç/tahsilat/vade/çeyrek hesabı yok.
+- Cari alanı **not_evaluated** uyarısıdır, limit hesabı/limiti geçme kararı değildir. Taslaklar private sepet niyetidir; fiyat sabitleyen sipariş değildir. Bilinmeyen ağ sonucunda şifreli yerel istek kaydı ve sunucu receipt aynı UUID ile tekrar denemeyi korur.
+- Sekizinci migration + iki private tablo + orders.credit_check_state; 35 public tablo korunur. Eski yedi migration, iki seed, eski DB/Flutter testleri ve paket/lock dosyaları değişmedi. Yeni SDK transport testi sentetik HTTP sunucusu ve şifreli depo mock'u kullanır; gerçek Supabase uçtan uca veya Android process-kill kabulü diye sunulmaz.
+
+**Son kanıt:** pub get 0, analyze 0, Flutter 130/130 (113 eski + 17 yeni) / 0; local reset 0; checkout 94/94, pricing 73/73, business 140/140, account_scope 85/85; tüm DB çıkışları 0. Debug build **0** (41,4 saniye); emulator-5554 integration **3/3 PASS / 0** (mevcut preview, yeni Customer checkout, ürün yönetimi). Normal APK `build/app/outputs/flutter-apk/peksen-gida-phase6-debug.apk`, **238.055.769 bayt**. `git diff --check` 0. Android smoke fixture repository kullanır; manuel görsel/gerçek backend uçtan uca kabulü değildir.
+
+**Faz 6 kabulü:** Katalog/müşteri fiyatı, birim/miktar/minimum, sepet/taslak ve gönderim çalışır; fiyat/dönüşüm/stok farkında açıklama ve yeniden onay vardır. Exact snapshot ve gerekli rezervasyon transaction'ı DB testlidir. Borç/exposure hesaplaması son kullanıcı kararıyla kapsam dışında; bu eksiklik gizli bir başarılı cari kontrol olarak sunulmaz. Android otomatik kabulü geçti, manuel/üretim kanıtlarının sınırı aşağıdadır.
+
+**Dosyalar:** `lib/features/customer/` altında model/repository/provider ve dört ekran; router/hesap menüsü; `20261009000200_customer_checkout.sql`, `customer_checkout_test.sql`, iki yeni Flutter test dosyası ve Customer integration smoke; AGENTS/README/PLAN/DECISIONS/PROGRESS/TESTING/supabase README. Secret eklenmedi, .env okunmadı/değişmedi, commit/push/yayınlama yapılmadı.
+
+**Sınırlar:** Cari/exposure R-02; stok yetersizliğinin yönetici çözümü ve sonraki geçişler R-03; çeyrek/eşik/geç iade R-01. Üretim/gerçek cihaz, gerçek backend ile yeni Android UI'nin manuel uçtan uca ve iki DB bağlantısıyla stres testi yapılmadı. Faz 7 için yalnız kullanıcı göreviyle Sales müşteri seçimi ekranı ve mevcut ortak servise bağlantı hazırlanabilir.
+
 ## Faz 5 — 9 Ekim 2026, onaylı ürün/birim/fiyat uygulaması
 
 **Faz 5 tamamlandı (onaylı ürün/birim/fiyat kapsamı).** Android smoke **2/2 PASS / çıkış 0** ile bitti. Faz 4 kullanıcı tarafından kabul edilmiş temel olarak korundu; auth/OTP/kalıcı oturum ve bağlantı sorunları yeniden açılmadı. Başlangıç commit'i `0020c59`; kesinti öncesi ürün dosyaları korunup tamamlandı. Yeni iş kararları F5-01'dedir; Faz 6 başlatılmadı.
