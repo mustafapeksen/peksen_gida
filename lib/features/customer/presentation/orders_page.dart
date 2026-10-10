@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../products/domain/product_repository.dart' show formatKurus;
 import 'catalog_page.dart';
 import 'shop_providers.dart';
+import '../../orders/presentation/order_workflow_panel.dart';
 
 final customerOrdersProvider =
     FutureProvider.autoDispose<List<Map<String, dynamic>>>(
@@ -71,6 +72,12 @@ class CustomerOrdersPage extends ConsumerWidget {
                             '${o['id']}\n${formatKurus(o['total_kurus'].toString())}',
                           ),
                           children: [
+                            OrderWorkflowPanel(
+                              key: ValueKey(o['id']),
+                              orderId: o['id'] as String,
+                              onChanged: () =>
+                                  ref.invalidate(customerOrdersProvider),
+                            ),
                             if (o['credit_check_state'] == 'not_evaluated')
                               const Text(
                                 'Cari kontrol hesaplanmadı; gönderim borç oluşturmaz.',

@@ -1,5 +1,21 @@
 # Pekşen Gıda ilerleme kaydı
 
+## Faz 8 — 10 Ekim 2026, submitted iptali ve talep altyapısı
+
+**Onaylı dar dilim uygulandı; Faz 8 bütünü tamamlanmadı.** Başlangıç HEAD `3c28fab`, temiz çalışma ağacı; Faz 7 kullanıcı tarafından kabul/commit edildi. Kesinti öncesi Faz 8 dosyaları korunarak devam edildi. Kullanıcı F8-01 ile yalnız submitted iptali ve talep altyapısını bu tura aldı; alternatif uygulaması ve picking sonrası stok etkili onayları bekletti. Manager/Owner dışında talep karar yetkisi yoktur; bu tur karar verme RPC/UI'si açılmadı.
+
+- Customer kendi; Sales yalnız aktif atanmış müşterisinin submitted siparişini gerekçeyle iptal edebilir. Aynı ortak sipariş listesinde gerekçe/onay, geçmiş, talepler ve yeniden deneme vardır. Faz 6/7 checkout servisleri ve fiyat/snapshot/yeniden onay davranışı değiştirilmedi.
+- Yeni `request_order_action` sipariş/müşteri/stok kilitleri altında kayıtlı rezervasyonu `released` hareketiyle çözer, `submitted → cancelled` history ve audit olaylarını atomik yazar. Fiziksel stok, kalem snapshotları, toplam ve finans durumu korunur. Private receipt ile aynı istek tekrarında ikinci stok hareketi oluşmaz; atama iptali sonrası replay de reddedilir.
+- Değişiklik veya ilerleyen hazırlık aşamasında iptal talebi yalnız niyet kaydıdır; sipariş/stok/fiyat değişmez. Manager/Owner mevcut RLS ile talepleri okuyabilir; ham istemci yazmaları kapalıdır. Onay/ret servisi, alternatif revizyonu ve picking sonrası telafi bu dilimde yoktur.
+
+**Dosyalar:** Yeni onuncu migration `20261009000400_order_workflow.sql`, private `order_workflow_receipts`, `order_workflow_test.sql`; Flutter `features/orders/data/order_workflow_repository.dart`, `presentation/order_workflow_panel.dart`; ortak `customer/presentation/orders_page.dart`; yeni widget ve Android smoke testleri; PLAN/DECISIONS/PROGRESS/TESTING. Önceki dokuz migration, iki seed, eski DB/Flutter testleri, checkout repository/RPC'leri ve bağımlılıklar korunur.
+
+**Doğrulama:** `pub get` **0**; son `analyze` **0**; Flutter **151/151 / 0** (143 eski + 8 yeni); local reset **0** (10 migration + 2 seed); yeni workflow **57/57 / 0**; Customer checkout **94**, Sales checkout **50**, pricing **73**, business **140**, auth_access **119**, account_scope **85** testinin tamamı **PASS / 0**. Toplam **618 DB assertion**. Debug build **0**, 55,7 saniye; normal APK `build/app/outputs/flutter-apk/peksen-gida-phase8-debug.apk`, **238.072.214 bayt**. emulator-5554 üzerinde iptal + Customer + Sales integration **3/3 / 0**; fixture repository kullanır, manuel görsel veya gerçek backend cihaz kabulü değildir. Son `git diff --check` **0**.
+
+**Ara hata ve devam:** İlk analyze iki süslü parantez stil ihlaliyle 1 verdi; düzeltildi. Kesinti sonrasında Docker durmuştu; ilk DB testi bağlantı reddiyle 1 verdi, Docker başlatılınca aynı test geçti. Script execution policy nedeniyle ilk wrapper çağrıları komutu başlatamadı; yalnız alt PowerShell sürecinde Bypass kullanıldı, sistem ayarı değiştirilmedi. Başarılı pub get/reset tekrar edilmedi; sonradan yalnız eklenen atomik rollback regresyonları için workflow paketi yeniden koşuldu (48 → 57).
+
+**Kalanlar:** Alternatif kabul/ret/miktar değişimi revizyon sözleşmesi, picking sonrası stok telafisi, stok yetersizliği onayı sonrası rezervasyon, tam durum matrisi, cari/exposure ve çeyrek/iskonto açık. Talep karara bağlama servisi/UI'si bekler. Manuel Android görsel ve gerçek Supabase ile cihaz uçtan uca kontrolü, çok bağlantılı yarış/stres ve process-kill kabulü yapılmadı. Faz 9'a geçilmedi; secret/commit/push/yayınlama yok.
+
 ## Faz 7 — 9 Ekim 2026, Sales müşteri seçimi ve ortak checkout
 
 **Faz 7 tamamlandı — F7-01 kapsamında yerel geliştirme kabulü.** Başlangıç HEAD `a001244` (Faz 6 kabulü). Kesinti öncesi routing, scoped provider, Sales ekranı ve migration değişiklikleri korundu; mevcut fiyat/checkout servisi yeniden yazılmadı. F7-01 son kullanıcı yetki kararını kaydeder.

@@ -1,5 +1,37 @@
 # Pekşen Gıda doğrulama ve test planı
 
+## Faz 8 — 9–10 Ekim 2026 doğrulaması
+
+F8-01 onaylı dilimi: submitted iptali ve gerekçeli talep oluşturma. Faz 8'in alternatif/karar uygulaması kabulü bekler. Kanıtlar `build/phase8-validation-20261009/*.log` içindedir; dizin görevin ilk gününü, loglar devam koşularının zamanını taşır.
+
+| Komut | Sonuç | Çıkış |
+| --- | --- | ---: |
+| `flutter pub get` | Başarılı; bağımlılık/lock değişmedi, kesinti öncesi bitiş kaydı korundu | 0 |
+| `flutter analyze` | No issues found; ilk iki stil ihlali giderildi | 0 |
+| `flutter test --reporter expanded` | 151/151; 143 mevcut + 8 yeni | 0 |
+| `flutter build apk --debug` | Built app-debug.apk; 55,7 saniye | 0 |
+| `npx.cmd --yes supabase@2.119.0 db reset --local` | 10 migration + 2 seed; başarılı bitiş kaydı korundu | 0 |
+| Aynı CLI `test db --local supabase/tests/database/order_workflow_test.sql` | 57/57 PASS | 0 |
+| Aynı komutla `customer_checkout_test.sql` | 94/94 PASS | 0 |
+| Aynı komutla `sales_checkout_test.sql` | 50/50 PASS | 0 |
+| Aynı komutla `product_pricing_test.sql` | 73/73 PASS | 0 |
+| Aynı komutla `business_foundation_test.sql` | 140/140 PASS | 0 |
+| Aynı komutla `auth_access_test.sql` | 119/119 PASS | 0 |
+| Aynı komutla `account_scope_test.sql` | 85/85 PASS | 0 |
+| `flutter test integration_test/order_workflow_smoke_test.dart integration_test/customer_checkout_smoke_test.dart integration_test/sales_checkout_smoke_test.dart -d emulator-5554` | 3/3 PASS; iptal, Customer ve Sales native smoke | 0 |
+
+**Android sonucu:** Kesinti sonrası bağlı cihaz yoktu; mevcut `Medium_Phone_API_37.0` AVD başlatıldı ve emulator-5554 yeniden bağlandı. Üç integration testi Android 17/API 37 üzerinde geçti. Yeni test gerekçe/açık onay/iptal sonucu; önceki iki test ortak checkout ve Sales müşteri bağlamını doğrular. Fixture repository kullanıldı; emülatör başsız çalıştırıldı, ekranlar görsel olarak incelenmiş sayılmaz. Son `git diff --check` 0.
+
+**DB kapsamı:** 618 assertion. Yeni 57 test: Customer/Sales yetkisi, creator-only/pasif/başka müşteri retleri, replay yetki iptali, Warehouse/Accounting/anon kapalı sınırları, ham UPDATE/INSERT reddi; tek iptal/history/audit ve iki farklı satış biriminin doğru taban miktarı; snapshot/tutar/finans korunması; talebin sipariş/stok değiştirmemesi ve tekrar niyetin çoğalmaması; güncel fiyat/dönüşüm değişse de tarihsel miktarın çözülmesi; ikinci kalemin tutarsızlığında ilk kalem hareket/audit/rezervasyon yazmasının da rollback olması. Manager yalnız mevcut okuma yetkisini kullanır; belirsiz onayları ham UPDATE ile geçemez. Yeni ticari formül veya audit olay türü eklenmedi.
+
+**Flutter kapsamı:** Gerekçe ve açık onay, sonuçtan sonra liste yenileme, belirsiz ağ sonucunda aynı key/payload, talepte aynı sipariş durumu, picking için yalnız talep, delivered için eylem yokluğu, hata/yeniden dene, yüklenirken eylem yokluğu ve 320×568/klavye açık form + geri tuşu. Mevcut Customer/Sales, preview, auth ve fiyat testleri korundu. Yeni UI testleri fixture repository kullanır; gerçek backend kanıtı SQL testleridir.
+
+**Ara koşular:** İlk analyze **1** (iki stil ihlali), düzeltmeden sonra **0**. Kesinti sonrası Docker kapalıyken DB workflow **1** (ECONNREFUSED); runtime başlatıldıktan sonra **48/48 / 0**, eklenen 9 tarihsel dönüşüm/rollback assertionıyla **57/57 / 0**. Eski loglar saklandı. İlk wrapper çağrısı execution policy nedeniyle komutları başlatamadı; ardından yalnız alt süreç için Bypass verildi. Sistem execution policy değiştirilmedi.
+
+**APK:** Integration çalıştırıcısı standart APK'yı değiştirmeden önce normal debug çıktısı `build/app/outputs/flutter-apk/peksen-gida-phase8-debug.apk` olarak korundu (**238.072.214 bayt**). APK varlığı değil build bitiş/çıkış kaydı başarı kanıtıdır. Public config verilmeden derlendi; .env okunmadı/değişmedi.
+
+**Sınırlar:** Identity ve ilgisiz lifecycle/gerçek Auth SDK paketleri bu tur tekrar edilmedi; geçmiş başarılı sonuçlar bu koşuya eklenmedi. Manuel görsel kontrol, gerçek Supabase ile Android uçtan uca, süreç öldürme, gerçek cihaz ve çok oturumlu yarış/stres kontrolü yapılmadı. Alternatif uygulaması, talep karara bağlama ve picking sonrası stok etkili onaylar uygulanmadı/test edilmedi.
+
 ## Faz 7 doğrulaması — 9 Ekim 2026
 
 | Komut | Sonuç | Çıkış |
