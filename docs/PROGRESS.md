@@ -1,5 +1,17 @@
 # Pekşen Gıda ilerleme kaydı
 
+## Faz 9 — 11 Ekim 2026, depo/stok
+
+Başlangıç çalışma ağacı temiz, HEAD `b985a0c` (Faz 8 commit'i). PLAN/SPEC ve mevcut sözleşmeler incelendi; kullanıcı üç F9-01 sorusunu onayladı. Önceki 11 migration/iki seed, Customer/Sales checkout ve F8 iptal/talep/alternatif niyet servisleri korunur.
+
+**Uygulanan kapsam:** Warehouse/Manager/Owner submitted→picking; snapshot ile kısmi integer toplama ve tamamlanınca picked; yalnız mevcut açık sefer/durakla picked→loaded (ikinci stok düşümü yok). Exact mal kabulü; Warehouse sayım girişi, Manager/Owner atomik onayı; eski stok sürümü veya rezervasyon altı sayım reddi. Hareket/history/audit/receipt tek transaction ve tekrar güvenli. Yeni dar projection fiyat/müşteri/finans verisi içermez. `/account/inventory` stok/toplama/sayım/hareket ekranı ve hesap bağlantısı; miktar/birim/not formları, yükleniyor/hata/boş/yenileme, küçük ekran/geri ve aynı anahtarlı diyalog tekrarı vardır.
+
+**Dosyalar:** `supabase/migrations/20261011000100_warehouse_inventory.sql`; `warehouse_inventory_test.sql`; `supabase/tests/client/inventory_concurrency_test.py`; `lib/features/inventory/data/inventory_repository.dart`, `presentation/inventory_page.dart`; hesap ekranı/router; `test/inventory_test.dart`, `integration_test/inventory_smoke_test.dart`. `auth_access_test.sql` eski 119 assertionı korur, iki yeni invoker yardımcının EXECUTE-kapalı sınırını açıkça denetleyen iki assertion ekler (121). AGENTS/PLAN/DECISIONS/PROGRESS/TESTING/backend README güncellendi.
+
+**Doğrulama:** pub get **0**, analyze **0**, Flutter **179/179 / 0** (166 mevcut + 13 yeni), debug APK build **0** (45,6 s). Local reset **0**, 12 migration/iki seed. Yeni DB **70**, scope **85**, auth **121**, business **140**, pricing **73**, Customer checkout **94**, Sales checkout **50**, workflow **57**, review **62**: **752/752 / 0**. Ayrı bağlantılarda checkout yarışında yeniden onay, stok eksiğinde sıfır rezervasyon, aynı-key mal kabulü ve start/cancel yarışı **4/4 / 0**; bu testin sentetik commit verileri ardından local reset ile temizlendi. Komut/sonuç kanıtları `build/phase9-validation-20261011/` içinde. Normal APK `build/app/outputs/flutter-apk/peksen-gida-phase9-debug.apk`, **238.111.149 bayt**.
+
+**Durum:** Faz 9'un onaylı **F9-01 yerel kapsamı tamamlandı**. emulator-5554 üzerinde depo smoke, Faz 8 karar/alternatif, Customer ve Sales checkout integration testleri **5/5 / 0**; fixture repository kullanan Android 17/API 37 testidir. Son `git diff --check` **0**. Onaylı kapsam dışındaki gerçek kalem revizyonu, picking sonrası telafi, yetersiz stok yönetici onayı, cari/exposure ve çeyrek/iskonto uygulanmadı. Sefer/durak atama servisi Faz 11'de; bu tur yükleme testi mevcut sentetik atamayı kullanır. Manuel görsel/gerçek backend ile Android uçtan uca, depo işleminde process-kill sonrası retry ve üretim stres kabulü yapılmadı. Faz 10'a geçilmedi; secret/commit/push yok.
+
 ## Faz 8 kapanış kontrolü — 11 Ekim 2026
 
 Mevcut Git durumu ve diff korundu. 10 Ekim koşusunun komut bitiş logları yeniden incelendi: pub get, son analyze, 166/166 Flutter testi, debug build, local reset, sekiz pakette 680/680 DB assertion ve emulator-5554 üzerinde 5/5 integration testi çıkış **0** ile tamamlanmış. Başarılı kontroller bu kapanışta tekrar çalıştırılmadı; APK varlığı yerine bitmiş build logu esas alındı. Kanıtlar TESTING başındadır.

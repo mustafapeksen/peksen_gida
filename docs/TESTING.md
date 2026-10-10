@@ -1,5 +1,41 @@
 # Pekşen Gıda doğrulama ve test planı
 
+## Faz 9 doğrulaması — 11 Ekim 2026
+
+Kanıt dizini `build/phase9-validation-20261011/`; CLI/Flutter logları COMMAND/EXIT_CODE/END içerir. `concurrency-result.log` tamamlanmış araç oturumunun çıktı/çıkış kaydıdır, tekrar çalıştırılmış gibi gösterilmez. Aşağıdaki sonuçlar yeni Faz 9 koşusudur.
+
+| Komut | Sonuç | Çıkış |
+| --- | --- | ---: |
+| `flutter pub get` | Başarılı; paket/lock değişmedi | 0 |
+| `flutter analyze` | No issues found | 0 |
+| `flutter test --reporter expanded` | 179/179; 166 mevcut + 13 yeni | 0 |
+| `flutter build apk --debug` | Built app-debug.apk; 45,6 s | 0 |
+| `npx.cmd --yes supabase@2.119.0 db reset --local` | 12 migration + iki seed; yarış testi sonrası tekrar temiz reset | 0 |
+| Aynı CLI `test db --local supabase/tests/database/warehouse_inventory_test.sql` | 70/70 PASS | 0 |
+| Aynı komutla `account_scope_test.sql` | 85/85 PASS | 0 |
+| Aynı komutla `auth_access_test.sql` | 121/121 PASS | 0 |
+| Aynı komutla `business_foundation_test.sql` | 140/140 PASS | 0 |
+| Aynı komutla `product_pricing_test.sql` | 73/73 PASS | 0 |
+| Aynı komutla `customer_checkout_test.sql` | 94/94 PASS | 0 |
+| Aynı komutla `sales_checkout_test.sql` | 50/50 PASS | 0 |
+| Aynı komutla `order_workflow_test.sql` | 57/57 PASS | 0 |
+| Aynı komutla `order_review_test.sql` | 62/62 PASS | 0 |
+| `python supabase/tests/client/inventory_concurrency_test.py` | 4/4 gerçek ayrı bağlantı senaryosu | 0 |
+| `flutter test integration_test/inventory_smoke_test.dart integration_test/order_review_smoke_test.dart integration_test/customer_checkout_smoke_test.dart integration_test/sales_checkout_smoke_test.dart -d emulator-5554` | 5/5 PASS; Android 17/API 37 | 0 |
+| `git diff --check` | Başarılı | 0 |
+
+**Son kabul:** F9-01 ile onaylı yerel Faz 9 kapsamı tamamlandı. Android'de bir yeni depo smoke (mal kabulü, hazırlık kuyruğu, geri), iki review ve iki Customer/Sales checkout testi geçti. Her biri fixture repository ile gerçek Android widget/gezinti ortamını sınar; SQL/transaction kanıtı ayrı DB ve yarış testleridir.
+
+**DB kapsamı (752 assertion):** Yeni 70 test; anonim/yetkisiz/pasif/replay erişimi ve ham yazma reddi, açık alan listelerinde fiyat/müşteri yokluğu, submitted başlangıcı, kısmi/tam toplama, fazla miktar/yabancı kalem reddi, güncel birim değişse bile tarihsel stok snapshotı, atamasız yükleme reddi ve aktif atamada sıfır stok etkisi, exact mal kabulü, aynı key/payload, yalnız Warehouse sayım girişi/Manager-Owner onayı, stale/ABA/rezervasyon altı retleri, immutable onay ve audit hatasında toplama/mal kabulü/sayım rollback. Eski auth kontrolü tüm private fonksiyonları yetki yardımcısı sanıyordu; iki yeni invoker helper açık isimleriyle ayrıldı, her birinin invoker/EXECUTE-kapalı sözleşmesine ayrı test eklendi. Önceki 119 yetki kontrolü kaldırılmadı.
+
+**Yarış testi:** Önkoşul temiz local reset, çalışan Docker ve Python; credential/remote config gerekmez. İki farklı müşteri aynı stok için yarışır: kazanan submitted, bekleyen eski quote nedeniyle changed alır; yeni quote açıkça onaylanınca pending_approval ve sıfır rezervasyon. İki aynı-key mal kabulü tek hareket üretir. Toplamayı başlatma ile submitted iptali yarışı durum/history/rezervasyonu bozmaz. Test işlem kilitleri açıkken ikinci bağlantıyı başlatır; yalnız ardışık çağrı testi değildir. Görünür sentetik fixture için DB commit kullanır; **ardından local reset zorunludur ve bu koşuda yapıldı**. Git commit yapmaz. Dört hedefli yarış, üretim yük/stres kabulü değildir.
+
+**Flutter kapsamı:** Decimal metin ve integer sınırı; dört yetkisiz rol sıfır fetch; exact mal kabulü ve belirsiz cevapta aynı payload/key; sıfır mal kabulü reddi/sıfır sayım kabulü; Manager/Owner onayı; Warehouse onay yokluğu; toplama→kalem→yükleme açık onayı; yükleniyor/hata/yeniden dene/boş; profil yetkisi kaybında verinin temizlenmesi; 320×568/klavye ve Android geri davranışı. Eski testler değişmedi.
+
+**Ara sonuçlar:** İlk analyze beş yeni dosya stil uyarısıyla **1**, düzeltme sonrası **0**. İlk DB paketi pgTAP `values` yazımındaki boşluk nedeniyle **1**; test sorgusu düzeltildi, önce 67 sonra üç audit/picking rollback assertionıyla **70/70 / 0**. İlk auth regresyonu yeni invoker helper sınıflandırmasından **1**; açık invoker sınırlarıyla **121/121 / 0**. Hatalı ara loglar korunur, başarılı sayılmaz.
+
+**Kabul sınırları:** Normal APK integration öncesi `peksen-gida-phase9-debug.apk` olarak korundu (**238.111.149 bayt**); başarı kanıtı build logundaki Built/EXIT_CODE 0'dır. .env okunmadı/değişmedi; build'e public config verilmedi. Android integration fixture repository kullanır; gerçek Supabase cihaz uçtan uca veya manuel görsel kabul yerine geçmez. Yeni depo işlemlerinde process-kill sonrası kalıcı retry deposu yok; açık diyalogdaki tekrar kanıtı bu senaryoya genellenmez. Sefer atama, picking sonrası telafi/kalem revizyonu/cari/çeyrek işlemleri uygulanmadı/test edilmiş sayılmaz. İlgisiz identity/lifecycle/Auth SDK paketleri tekrar edilmedi.
+
 ## Kapanış kanıt kontrolü — 11 Ekim 2026
 
 Git durumu/diff ve `build/phase8-review-validation-20261010/` altındaki son logların başarı, `EXIT_CODE: 0` ve `END` kayıtları incelendi. Aşağıdaki sonuçlar **10 Ekim'de çalıştırılan komutlara** aittir; bu dokümantasyon kapanışında test/build/reset tekrar edilmedi. İlk başarısız analyze kaydı tarihçe olarak korunur; son analyze temizdir. Korunan normal APK **238.092.588 bayt**; başarı kanıtı tamamlanmış build komutudur.

@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../domain/account_repository.dart';
 import 'auth_providers.dart';
 import '../../products/presentation/product_providers.dart';
+import '../../inventory/presentation/inventory_page.dart' show canUseInventory;
 
 class AccountPage extends ConsumerStatefulWidget {
   const AccountPage({super.key});
@@ -91,6 +92,11 @@ class _AccountPageState extends ConsumerState<AccountPage>
                           TextButton(
                             onPressed: () => context.push('/account/products'),
                             child: const Text('Ürünler ve birimler'),
+                          ),
+                        if (canUseInventory(value.role))
+                          TextButton(
+                            onPressed: () => context.push('/account/inventory'),
+                            child: const Text('Depo ve stok'),
                           ),
                         if (value.role == AccountRole.salesOperator)
                           TextButton(

@@ -21,6 +21,7 @@ import '../../features/customer/presentation/cart_page.dart';
 import '../../features/customer/presentation/orders_page.dart';
 import '../../features/orders/presentation/alternative_intent_page.dart';
 import '../../features/orders/presentation/order_review_page.dart';
+import '../../features/inventory/presentation/inventory_page.dart';
 import '../../features/preview/domain/role_menu.dart';
 import '../../features/preview/presentation/preview_page.dart';
 import '../../features/preview/presentation/role_menu_page.dart';
@@ -77,6 +78,10 @@ GoRouter createAppRouter({
         path: '/account',
         builder: (context, state) => const AccountPage(),
         routes: [
+          GoRoute(
+            path: 'inventory',
+            builder: (context, state) => const InventoryPage(),
+          ),
           GoRoute(
             path: 'order-requests',
             builder: (context, state) => const OrderReviewPage(),

@@ -1,5 +1,7 @@
 # Pekşen Gıda çalışma kuralları
 
+**11 Ekim 2026 — Faz 9:** Faz 8 kullanıcı tarafından commit edilmiş/kabul edilmiş sayıldı (`b985a0c`). F9-01 onayları geçerli: Warehouse/Manager/Owner toplama ve mal kabulü; yalnız Warehouse sayım girişi, Manager/Owner onayı; stok değişiminde yeniden sayım, rezervasyon altı ret; yükleme mevcut aktif sefer/durak gerektirir, atama servisi Faz 11'de kalır. Eski “Faz 8/9'a geçme” ifadeleri tarihçedir. Fiyat/snapshot/checkout/iptal ve karar-niyet sınırları korunur. Sonuçlar PROGRESS/TESTING başındadır. Faz 10'a geçme; secret/commit/push yok.
+
 **9 Ekim 2026 — Faz 7:** Kullanıcı Faz 6'yı commit edilmiş kabul ederek Faz 7'yi yetkilendirdi. F7-01, eski “atanmış veya oluşturduğu” Sales kuralını daraltır: yalnız aktif atanmış müşteri; creator tek başına yetki sağlamaz. Ortak Faz 6 checkout/fiyat/snapshot/rezervasyon sözleşmesi korunur, Sales ekranları müşteri bağlamında ayrılır. Son doğrulama PROGRESS/TESTING başındadır. Faz 8'e geçme; secret/commit/push yok.
 
 **9 Ekim 2026 — Faz 6 güncellemesi:** Kullanıcı Faz 5'i commit edilmiş/kabul edilmiş sayarak Faz 6'yı yetkilendirdi; aşağıdaki eski “Faz 6'ya geçme” notları tarihseldir. F6-01 geçerlidir: Customer UI ve ortak Customer/Sales checkout; fiyat/dönüşüm/stok farkında sıfır yazma + açık yeniden onay; cari yalnız not_evaluated uyarısı, borç/tahsilat/exposure formülü yok. B-01/B-02 normal submitted rezervasyonu, stok eksiğinde pending_approval ve sıfır rezervasyon korunur. Son durum PROGRESS/TESTING başındadır. Faz 7'ye kendiliğinden geçme; secret/commit/push yok.

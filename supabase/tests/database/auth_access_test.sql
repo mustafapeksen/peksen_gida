@@ -27,9 +27,23 @@ insert into delivery_stops(run_id,order_id,sequence,status,assigned_by)
 
 select ok(not exists(select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace
  where n.nspname='private' and ((not p.prosecdef and p.oid not in
-   ('private.normalized_cart(jsonb)'::regprocedure,'private.protect_exact_price_snapshot()'::regprocedure))
+   ('private.normalized_cart(jsonb)'::regprocedure,'private.protect_exact_price_snapshot()'::regprocedure,
+    'private.bump_inventory_revision()'::regprocedure,
+    'private.warehouse_status(uuid,public.order_state,public.order_state,uuid)'::regprocedure))
    or not (p.proconfig @> array['search_path=""']))),
  'Private authorization helpers use SECURITY DEFINER; every helper has fixed empty search path');
+-- Phase 9 non-authorization helpers intentionally inherit the caller. Public
+-- entry points perform authorization; these helpers never grant elevation.
+select ok((select not prosecdef and prorettype='trigger'::regtype from pg_proc
+ where oid='private.bump_inventory_revision()'::regprocedure)
+ and not has_function_privilege('anon','private.bump_inventory_revision()','EXECUTE')
+ and not has_function_privilege('authenticated','private.bump_inventory_revision()','EXECUTE'),
+ 'Inventory revision trigger stays invoker and closed to API callers');
+select ok((select not prosecdef from pg_proc
+ where oid='private.warehouse_status(uuid,public.order_state,public.order_state,uuid)'::regprocedure)
+ and not has_function_privilege('anon','private.warehouse_status(uuid,public.order_state,public.order_state,uuid)','EXECUTE')
+ and not has_function_privilege('authenticated','private.warehouse_status(uuid,public.order_state,public.order_state,uuid)','EXECUTE'),
+ 'Warehouse status helper stays invoker and closed to API callers');
 -- Phase 6 introduced a pure input normalizer: it deliberately has no definer
 -- privileges. Check its narrower contract rather than demanding escalation.
 select ok((select not prosecdef and provolatile='i' from pg_proc where oid='private.normalized_cart(jsonb)'::regprocedure)
