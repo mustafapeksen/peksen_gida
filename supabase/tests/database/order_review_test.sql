@@ -1,0 +1,137 @@
+begin;
+create extension if not exists pgtap with schema extensions;
+set local search_path=public,extensions;
+select no_plan();
+create function pg_temp.cid() returns uuid language sql as $$select '31000000-0000-4000-8000-000000000001'::uuid$$;
+create function pg_temp.unit_id() returns uuid language sql security definer set search_path='' as $$
+ select u.id from public.product_units u join public.products p on p.id=u.product_id where p.sku='TEST-A' and u.unit_name='adet'
+$$;
+create function pg_temp.cart() returns jsonb language sql as $$select jsonb_build_array(jsonb_build_object('unit_id',pg_temp.unit_id(),'quantity',1))$$;
+create temp table review_state(oid uuid,item uuid,offer uuid,offer2 uuid,rid uuid,rid2 uuid,
+ proposal_key uuid default gen_random_uuid(),response_key uuid default gen_random_uuid(),decision_key uuid default gen_random_uuid(),snapshot jsonb);
+grant all on review_state to authenticated;
+update customers set assigned_sales_operator_id='30000000-0000-4000-8000-000000000002' where id=pg_temp.cid();
+select set_config('request.jwt.claim.sub','30000000-0000-4000-8000-000000000001',true);
+set local role authenticated;
+insert into review_state(oid) select (checkout_cart(pg_temp.cid(),pg_temp.cart(),quote_cart(pg_temp.cid(),pg_temp.cart()),gen_random_uuid())->>'order_id')::uuid;
+update review_state set item=(select id from order_items where order_id=oid);
+update review_state set snapshot=(select to_jsonb(i) from order_items i where id=item);
+select throws_ok($$select propose_order_alternative(item,pg_temp.unit_id(),1,proposal_key) from review_state$$,'42501',null::text,'Customer cannot propose as Sales');
+select throws_ok($$select * from order_review_requests()$$,'42501',null::text,'Customer cannot read manager queue');
+select set_config('request.jwt.claim.sub','30000000-0000-4000-8000-000000000002',true);
+select throws_ok($$select propose_order_alternative(item,pg_temp.unit_id(),0,proposal_key) from review_state$$,'22023',null::text,'Zero proposal quantity denied');
+update review_state set offer=(propose_order_alternative(item,pg_temp.unit_id(),2,proposal_key)->>'offer_id')::uuid;
+select is((propose_order_alternative(item,pg_temp.unit_id(),2,proposal_key)->>'offer_id')::uuid,offer,'Proposal replay has one identity') from review_state;
+select throws_ok($$select propose_order_alternative(item,pg_temp.unit_id(),3,proposal_key) from review_state$$,'22023',null::text,'Proposal key cannot change quantity');
+select is(jsonb_array_length(order_alternatives(oid)->'offers'),1,'Assigned Sales sees its order offers') from review_state;
+select throws_ok($$select respond_order_alternative(offer,true,response_key) from review_state$$,'42501',null::text,'Sales cannot accept for Customer');
+reset role;
+select is((select count(*) from alternative_offers where order_item_id=item),1::bigint,'One proposal after replay') from review_state;
+update customers set created_by=auth.uid(),assigned_sales_operator_id=null where id=pg_temp.cid();
+set local role authenticated;
+select throws_ok($$select order_alternatives(oid) from review_state$$,'42501',null::text,'Creator-only cannot see alternatives');
+select throws_ok($$select propose_order_alternative(item,pg_temp.unit_id(),2,proposal_key) from review_state$$,'42501',null::text,'Revoked Sales cannot replay proposal');
+reset role;
+update customers set assigned_sales_operator_id=auth.uid() where id=pg_temp.cid();
+select set_config('request.jwt.claim.sub','30000000-0000-4000-8000-000000000008',true);
+set local role authenticated;
+select throws_ok($$select respond_order_alternative(offer,true,response_key) from review_state$$,'42501',null::text,'Other customer cannot respond');
+select throws_ok($$select order_alternatives(oid) from review_state$$,'42501',null::text,'Other customer cannot read');
+select set_config('request.jwt.claim.sub','30000000-0000-4000-8000-000000000001',true);
+update review_state set rid=(respond_order_alternative(offer,true,response_key)->>'request_id')::uuid;
+select is((respond_order_alternative(offer,true,response_key)->>'request_id')::uuid,rid,'Acceptance replay creates one intent') from review_state;
+select throws_ok($$select respond_order_alternative(offer,false,response_key) from review_state$$,'22023',null::text,'Response key cannot switch to rejection');
+select throws_ok($$select respond_order_alternative(offer,true,gen_random_uuid()) from review_state$$,'23514',null::text,'Completed offer cannot be accepted twice');
+select is((select to_jsonb(i) from order_items i where id=item),snapshot,'Customer acceptance leaves exact item snapshots unchanged') from review_state;
+select is((select status::text from orders where id=oid),'submitted','Acceptance leaves order submitted') from review_state;
+select throws_ok($$select decide_order_request(rid,true,'Unauthorized',gen_random_uuid()) from review_state$$,'42501',null::text,'Customer cannot decide request');
+reset role;
+select is((select reserved_qty::numeric from inventory where product_id=(select product_id from order_items where id=item)),4::numeric,'Intent acceptance has no stock effect') from review_state;
+select is((select count(*) from order_change_requests where id=rid and status='pending'),1::bigint,'Customer acceptance creates pending manager request') from review_state;
+select is((select count(*) from audit_logs where entity_id=offer and action='alternative_accepted'),1::bigint,'Acceptance audit once') from review_state;
+select throws_ok($$update order_change_requests set status='approved',decided_by='30000000-0000-4000-8000-000000000006',decided_at=now() where id=(select rid from review_state)$$,'23514',null::text,'Completed request requires note at constraint level');
+select throws_ok($$update order_change_requests set status='approved',decided_by='30000000-0000-4000-8000-000000000006',decided_at=now(),decision_note=' ' where id=(select rid from review_state)$$,'23514',null::text,'Blank note cannot satisfy evidence');
+select set_config('request.jwt.claim.sub','30000000-0000-4000-8000-000000000006',true);
+set local role authenticated;
+select ok(exists(select 1 from order_review_requests() x where x->>'id'=(select rid::text from review_state)),'Manager sees intent queue');
+select throws_ok($$select decide_order_request(rid,true,' ',decision_key) from review_state$$,'22023',null::text,'RPC requires decision note');
+select lives_ok($$select decide_order_request(rid,true,'Uygulama ayrı işlem olarak bekler',decision_key) from review_state$$,'Manager approves submitted request');
+select is(decide_order_request(rid,true,'Uygulama ayrı işlem olarak bekler',decision_key)->>'status','approved','Decision replay succeeds without mutation') from review_state;
+select throws_ok($$select decide_order_request(rid,false,'Changed',decision_key) from review_state$$,'22023',null::text,'Decision key cannot change payload');
+select throws_ok($$select decide_order_request(rid,false,'New decision',gen_random_uuid()) from review_state$$,'23514',null::text,'Approved request cannot be decided again');
+select is((select decision_note from order_change_requests where id=rid),'Uygulama ayrı işlem olarak bekler','Decision note stored') from review_state;
+select is((select decided_by from order_change_requests where id=rid),auth.uid(),'Live manager actor stored') from review_state;
+select ok((select decided_at is not null from order_change_requests where id=rid),'Decision time required') from review_state;
+select is((select to_jsonb(i) from order_items i where id=item),snapshot,'Manager approval does not rewrite item') from review_state;
+select is((select status::text from orders where id=oid),'submitted','Manager approval does not invent approved order status') from review_state;
+select throws_ok($$update order_change_requests set decision_note='raw'$$,'42501',null::text,'Manager raw mutation stays closed');
+reset role;
+select is((select count(*) from order_status_history where request_id=rid),1::bigint,'Exactly one decision history event') from review_state;
+select is((select from_status::text||'/'||to_status::text from order_status_history where request_id=rid),'submitted/submitted','History event has no fabricated transition') from review_state;
+select is((select count(*) from audit_logs where entity_id=rid and action='order_request_decided'),1::bigint,'Decision audit exactly once') from review_state;
+select is((select reserved_qty::numeric from inventory where product_id=(select product_id from order_items where id=item)),4::numeric,'Manager approval has no stock effect') from review_state;
+select throws_ok($$insert into order_status_history(order_id,from_status,to_status,changed_by,operation_key) select oid,'submitted','submitted',auth.uid(),gen_random_uuid() from review_state$$,'23514',null::text,'Ordinary same-state history still forbidden');
+select throws_ok($$update order_change_requests set decision_note='rewrite' where id=(select rid from review_state)$$,'23514',null::text,'Completed evidence remains immutable');
+-- Separate cancel intent to test Owner rejection and all non-submitted gates.
+insert into order_change_requests(order_id,type,requested_by,reason,status)
+ select oid,'cancel','30000000-0000-4000-8000-000000000001','Sentetik iptal talebi','pending' from review_state;
+update review_state set rid2=(select id from order_change_requests where order_id=oid and type='cancel');
+select set_config('request.jwt.claim.sub','30000000-0000-4000-8000-000000000007',true);
+-- Each status gate tested for BOTH decisions; seed manipulation is not a service transition.
+do $$declare s text; begin
+ for s in select unnest(array['draft','pending_approval','picking','picked','assigned','loaded','out_for_delivery','delivery_pending_confirmation','delivered','delivery_disputed','cancelled','rejected']) loop
+  update public.orders set status=s where id=(select oid from review_state);
+  begin
+   perform public.decide_order_request((select rid2 from review_state),true,'blocked',gen_random_uuid());
+   raise exception 'Unexpected approval in %',s;
+  exception when check_violation then null; end;
+  begin
+   perform public.decide_order_request((select rid2 from review_state),false,'blocked',gen_random_uuid());
+   raise exception 'Unexpected rejection in %',s;
+  exception when check_violation then null; end;
+ end loop;
+end$$;
+select is((select status from order_change_requests where id=rid2),'pending','All 12 non-submitted statuses deny approval AND rejection') from review_state;
+select is((select count(*) from order_status_history where request_id=rid2),0::bigint,'Denied decisions produce no history') from review_state;
+update orders set status='submitted' where id=(select oid from review_state);
+-- Audit failure must roll back request and the already inserted history.
+create function pg_temp.fail_review_audit() returns trigger language plpgsql as $$begin
+ if new.action='order_request_decided' then raise exception 'Injected audit failure'; end if; return new; end$$;
+create trigger fail_review_audit before insert on audit_logs for each row execute function pg_temp.fail_review_audit();
+set local role authenticated;
+select throws_ok($$select decide_order_request(rid2,false,'Rollback',gen_random_uuid()) from review_state$$,'P0001','Injected audit failure','Audit failure aborts decision');
+reset role;
+drop trigger fail_review_audit on audit_logs;
+select is((select status from order_change_requests where id=rid2),'pending','Audit failure rolls back request status') from review_state;
+select is((select count(*) from order_status_history where request_id=rid2),0::bigint,'Audit failure rolls back history') from review_state;
+set local role authenticated;
+select lives_ok($$select decide_order_request(rid2,false,'Owner ret kararı',gen_random_uuid()) from review_state$$,'Owner rejects submitted cancellation intent');
+select is((select status from order_change_requests where id=rid2),'rejected','Rejected request persisted') from review_state;
+select set_config('request.jwt.claim.sub','30000000-0000-4000-8000-000000000002',true);
+update review_state set offer2=(propose_order_alternative(item,pg_temp.unit_id(),3,gen_random_uuid())->>'offer_id')::uuid;
+select throws_ok($$select decide_order_request(rid2,false,'Sales',gen_random_uuid()) from review_state$$,'42501',null::text,'Assigned Sales cannot decide');
+select set_config('request.jwt.claim.sub','30000000-0000-4000-8000-000000000001',true);
+select lives_ok($$select respond_order_alternative(offer2,false,gen_random_uuid()) from review_state$$,'Customer rejects alternative without dropping original item');
+select is((select to_jsonb(i) from order_items i where id=item),snapshot,'Rejected alternative leaves original item intact') from review_state;
+select ok((order_workflow_state(oid)->'requests') @> jsonb_build_array(jsonb_build_object('id',rid,'decision_note','Uygulama ayrı işlem olarak bekler')),'Customer sees decision note in scoped state') from review_state;
+reset role;
+select is((select count(*) from order_change_requests where order_id=oid),2::bigint,'Rejected alternative creates no new approval request') from review_state;
+select is((select count(*) from audit_logs where entity_id=offer2 and action='alternative_rejected'),1::bigint,'Alternative rejection audited') from review_state;
+update profiles set active=false where id='30000000-0000-4000-8000-000000000006';
+select set_config('request.jwt.claim.sub','30000000-0000-4000-8000-000000000006',true);
+set local role authenticated;
+select throws_ok($$select decide_order_request(rid,true,'Uygulama ayrı işlem olarak bekler',decision_key) from review_state$$,'42501',null::text,'Inactive manager cannot replay');
+select throws_ok($$select * from order_review_requests()$$,'42501',null::text,'Inactive manager cannot list');
+select set_config('request.jwt.claim.sub','30000000-0000-4000-8000-000000000003',true);
+select throws_ok($$select * from order_review_requests()$$,'42501',null::text,'Warehouse cannot read review data');
+select throws_ok($$select order_alternatives(oid) from review_state$$,'42501',null::text,'Warehouse cannot read alternatives');
+select set_config('request.jwt.claim.sub','30000000-0000-4000-8000-000000000004',true);
+select throws_ok($$select decide_order_request(rid2,true,'Accounting',gen_random_uuid()) from review_state$$,'42501',null::text,'Accounting cannot write decisions');
+reset role;
+set local role anon;
+select throws_ok($$select * from order_review_requests()$$,'42501',null::text,'Anonymous list closed');
+select throws_ok($$select decide_order_request(gen_random_uuid(),true,'Anon',gen_random_uuid())$$,'42501',null::text,'Anonymous decisions closed');
+reset role;
+select ok(not has_table_privilege('authenticated','private.order_review_receipts','SELECT'),'Review receipts private');
+select * from finish();
+rollback;

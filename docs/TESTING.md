@@ -1,5 +1,42 @@
 # Pekşen Gıda doğrulama ve test planı
 
+## Kapanış kanıt kontrolü — 11 Ekim 2026
+
+Git durumu/diff ve `build/phase8-review-validation-20261010/` altındaki son logların başarı, `EXIT_CODE: 0` ve `END` kayıtları incelendi. Aşağıdaki sonuçlar **10 Ekim'de çalıştırılan komutlara** aittir; bu dokümantasyon kapanışında test/build/reset tekrar edilmedi. İlk başarısız analyze kaydı tarihçe olarak korunur; son analyze temizdir. Korunan normal APK **238.092.588 bayt**; başarı kanıtı tamamlanmış build komutudur.
+
+Kapanış belge düzenlemelerinde `git diff --check` çalıştırıldı: çıkış **0**; mevcut iki dosyada yalnız LF/CRLF bilgilendirmesi vardır.
+
+F8-01/F8-02 yerel kabulü tamamlandı. Android 5/5 sonucu fixture repository kullanan integration testidir; manuel görsel veya gerçek Supabase ile cihaz uçtan uca kontrolü yerine geçmez. Gerçek kalem revizyonu ve picking sonrası stok işlemleri uygulanmadı/test edilmiş sayılmaz; cari/exposure ve çeyrek/iskonto belirsizlikleri değişmedi.
+
+## Faz 8 F8-02 devam doğrulaması — 10 Ekim 2026
+
+Kanıt: `build/phase8-review-validation-20261010/*.log`; komut/bitiş/exit kodları kayıtlıdır. Önceki Faz 8 koşusundan ayrıdır.
+
+| Komut | Sonuç | Çıkış |
+| --- | --- | ---: |
+| `flutter pub get` | Başarılı; bağımlılık/lock değişmedi | 0 |
+| `flutter analyze` | No issues found | 0 |
+| `flutter test --reporter expanded` | 166/166; 151 mevcut + 15 yeni | 0 |
+| `flutter build apk --debug` | Built app-debug.apk; 18,2 saniye | 0 |
+| `npx.cmd --yes supabase@2.119.0 db reset --local` | 11 migration + 2 seed | 0 |
+| Aynı CLI `test db --local supabase/tests/database/order_review_test.sql` | 62/62 PASS | 0 |
+| Aynı komutla `order_workflow_test.sql` | 57/57 PASS | 0 |
+| Aynı komutla `customer_checkout_test.sql` | 94/94 PASS | 0 |
+| Aynı komutla `sales_checkout_test.sql` | 50/50 PASS | 0 |
+| Aynı komutla `product_pricing_test.sql` | 73/73 PASS | 0 |
+| Aynı komutla `business_foundation_test.sql` | 140/140 PASS | 0 |
+| Aynı komutla `auth_access_test.sql` | 119/119 PASS | 0 |
+| Aynı komutla `account_scope_test.sql` | 85/85 PASS | 0 |
+| `flutter test integration_test/order_review_smoke_test.dart integration_test/order_workflow_smoke_test.dart integration_test/customer_checkout_smoke_test.dart integration_test/sales_checkout_smoke_test.dart -d emulator-5554` | 5/5 PASS; Android 17/API 37 | 0 |
+
+**Android/kapanış:** Manager karar kaydı + Customer alternatif kabulü (2 yeni), submitted iptali, Customer checkout ve Sales checkout (3 mevcut) gerçek emülatör widget ortamında fixture repository ile geçti. Gerçek Supabase cihaz uçtan uca/görsel kabulü değildir. F8-01/F8-02 ile sınırlandırılan yerel Faz 8 kapsamı tamamlandı; gerçek revizyon ve picking sonrası stok etkili onaylar bilinçli bekler. Son git diff --check 0.
+
+**680 DB assertion:** Yeni 62 test: teklif/yanıt/karar idempotency; rol/pasiflik/atama/başka müşteri ve anon/Warehouse/Accounting retleri; zorunlu not/immutable karar; history-audit atomikliği ve audit hatasında rollback. DO regresyonu 12 submitted dışı durumda hem onay hem ret reddini denetler; 24 kontrol ayrı pgTAP sayısı gibi sayılmadı. Karar/teklif sonucunda sipariş status/snapshot/rezervasyon değişmez; ret asıl kalemi silmez. Normal aynı-durum history yasaktır; typed request_decided ayrıdır. Business paketindeki 140 assertion korunur: pozitif karar fixture'ına not eklendi; aktör/zaman negatifleri geçerli notla denenir, yeni kural eski negatifleri maskelemez. Bu test-only iyileştirmeden sonra business yeniden **140/140 / 0** geçti.
+
+**166 Flutter testi:** Yeni 15: Manager/Owner karar/not, beş yetkisiz rol, picking/tamamlanmış talepte kapalı eylemler, aynı istekle hata tekrarı, yükleniyor/hata/boş, Customer teklif kabul/ret, Sales kalem/birim/miktar ve cevap verememesi, küçük ekran-klavye/geri, Customer history karar ayrımı. Önceki checkout/auth/preview testleri değişmedi. İlk analyze sekiz stil ihlaliyle **1** verdi; yalnız yeni üç UI dosyası düzeltildi, son analyze **0**.
+
+**APK/sınırlar:** Normal APK integration öncesi `build/app/outputs/flutter-apk/peksen-gida-phase8-review-debug.apk` olarak korundu (**238.092.588 bayt**). Başarı kanıtı build çıkış 0/Built kaydıdır. .env okunmadı/değişmedi; public config verilmeden derlendi. Manuel görsel, gerçek backend ile Android uçtan uca, process-kill ve çok oturumlu yarış/stres yapılmadı. İlgisiz identity/lifecycle/Auth SDK paketleri bu tur tekrar edilmedi.
+
 ## Faz 8 — 9–10 Ekim 2026 doğrulaması
 
 F8-01 onaylı dilimi: submitted iptali ve gerekçeli talep oluşturma. Faz 8'in alternatif/karar uygulaması kabulü bekler. Kanıtlar `build/phase8-validation-20261009/*.log` içindedir; dizin görevin ilk gününü, loglar devam koşularının zamanını taşır.

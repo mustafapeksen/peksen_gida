@@ -284,18 +284,18 @@ select lives_ok($$update order_items set order_id=order_id$$,'P2-4: same order u
 
 -- P2-5: Each failed decision leaves the original request pending. A complete
 -- decision is accepted, then protected by the existing immutable trigger.
-select throws_ok($$update order_change_requests set status='approved'$$,
+select throws_ok($$update order_change_requests set status='approved',decision_note='Sentetik test kararı'$$,
  '23514',null::text,'P2-5: approval without decision metadata rejected');
-select throws_ok($$update order_change_requests set status='rejected'$$,
+select throws_ok($$update order_change_requests set status='rejected',decision_note='Sentetik test kararı'$$,
  '23514',null::text,'P2-5: rejection without decision metadata rejected');
-select throws_ok($$update order_change_requests set status='approved',decided_by='30000000-0000-4000-8000-000000000006'$$,
+select throws_ok($$update order_change_requests set status='approved',decided_by='30000000-0000-4000-8000-000000000006',decision_note='Sentetik test kararı'$$,
  '23514',null::text,'P2-5: approval requires decision time');
-select throws_ok($$update order_change_requests set status='rejected',decided_at=now()$$,
+select throws_ok($$update order_change_requests set status='rejected',decided_at=now(),decision_note='Sentetik test kararı'$$,
  '23514',null::text,'P2-5: rejection requires decision actor');
-select throws_ok($$insert into order_change_requests(order_id,type,requested_by,reason,status)
- values ('35000000-0000-4000-8000-000000000003','cancel','30000000-0000-4000-8000-000000000002','Test','approved')$$,
+select throws_ok($$insert into order_change_requests(order_id,type,requested_by,reason,status,decision_note)
+ values ('35000000-0000-4000-8000-000000000003','cancel','30000000-0000-4000-8000-000000000002','Test','approved','Sentetik test kararı')$$,
  '23514',null::text,'P2-5: direct completed request INSERT also requires evidence');
-select lives_ok($$update order_change_requests set status='approved',decided_by='30000000-0000-4000-8000-000000000006',decided_at=now()$$,
+select lives_ok($$update order_change_requests set status='approved',decided_by='30000000-0000-4000-8000-000000000006',decided_at=now(),decision_note='Sentetik bütünlük testi kararı'$$,
  'P2-5: complete decision accepted');
 select throws_ok($$update order_change_requests set decided_by=null$$,
  '23514',null::text,'P2-5: completed decision evidence cannot be erased');

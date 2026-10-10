@@ -19,6 +19,8 @@ import '../../features/sales/presentation/sales_customers_page.dart';
 import '../../features/customer/presentation/product_detail_page.dart';
 import '../../features/customer/presentation/cart_page.dart';
 import '../../features/customer/presentation/orders_page.dart';
+import '../../features/orders/presentation/alternative_intent_page.dart';
+import '../../features/orders/presentation/order_review_page.dart';
 import '../../features/preview/domain/role_menu.dart';
 import '../../features/preview/presentation/preview_page.dart';
 import '../../features/preview/presentation/role_menu_page.dart';
@@ -76,6 +78,10 @@ GoRouter createAppRouter({
         builder: (context, state) => const AccountPage(),
         routes: [
           GoRoute(
+            path: 'order-requests',
+            builder: (context, state) => const OrderReviewPage(),
+          ),
+          GoRoute(
             path: 'sales',
             builder: (context, state) => const SalesCustomersPage(),
             routes: [
@@ -102,6 +108,14 @@ GoRouter createAppRouter({
                       GoRoute(
                         path: 'orders',
                         builder: (context, state) => const CustomerOrdersPage(),
+                        routes: [
+                          GoRoute(
+                            path: ':orderId/alternatives',
+                            builder: (context, state) => AlternativeIntentPage(
+                              orderId: state.pathParameters['orderId']!,
+                            ),
+                          ),
+                        ],
                       ),
                     ],
                   ),
@@ -116,6 +130,14 @@ GoRouter createAppRouter({
               GoRoute(
                 path: 'orders',
                 builder: (context, state) => const CustomerOrdersPage(),
+                routes: [
+                  GoRoute(
+                    path: ':orderId/alternatives',
+                    builder: (context, state) => AlternativeIntentPage(
+                      orderId: state.pathParameters['orderId']!,
+                    ),
+                  ),
+                ],
               ),
               GoRoute(
                 path: 'product/:id',

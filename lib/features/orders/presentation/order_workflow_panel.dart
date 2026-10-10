@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import '../../auth/presentation/auth_providers.dart';
 import '../../customer/presentation/orders_page.dart';
+import '../../customer/presentation/shop_providers.dart';
 import '../../products/presentation/price_page.dart' show newOperationKey;
 import '../data/order_workflow_repository.dart';
 
@@ -52,7 +54,8 @@ class _OrderWorkflowPanelState extends ConsumerState<OrderWorkflowPanel> {
         },
       ),
     );
-    if (!mounted || ref.read(accountProfileProvider).asData?.value?.id != actor) {
+    if (!mounted ||
+        ref.read(accountProfileProvider).asData?.value?.id != actor) {
       return;
     }
     // Even an uncertain result may have committed; refresh from the server.
@@ -92,6 +95,12 @@ class _OrderWorkflowPanelState extends ConsumerState<OrderWorkflowPanel> {
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             Text('Güncel durum: ${orderStatusLabel(status)}'),
+            TextButton(
+              onPressed: () => context.push(
+                '${ref.read(shopPathProvider)}/orders/${widget.orderId}/alternatives',
+              ),
+              child: const Text('Alternatif teklifleri'),
+            ),
             if (status == 'submitted')
               OutlinedButton(
                 onPressed: () => _act('cancel_submitted', 'Siparişi iptal et'),
@@ -108,7 +117,7 @@ class _OrderWorkflowPanelState extends ConsumerState<OrderWorkflowPanel> {
                   child: const Text('İptal talebi oluştur'),
                 ),
               const Text(
-                'Talep siparişi değiştirmez. Karar yetkisi Manager/Owner’dadır; değişiklik ve stok telafisi onay işlemleri henüz açık değildir.',
+                'Talep siparişi değiştirmez. Karar yetkisi yönetici veya işletme sahibindedir. Karar, kalem ve stok değişikliğini otomatik uygulamaz.',
               ),
             ],
             const SizedBox(height: 12),
@@ -125,13 +134,19 @@ class _OrderWorkflowPanelState extends ConsumerState<OrderWorkflowPanel> {
                     _ => 'Bekliyor',
                   }}',
                 ),
-                subtitle: Text(r['reason'] as String),
+                subtitle: Text(
+                  '${r['reason']}${r['decision_note'] == null ? '' : '\nKarar notu: ${r['decision_note']}'}',
+                ),
               ),
             const Text('Durum geçmişi'),
             for (final h in data['history'] as List)
               ListTile(
                 contentPadding: EdgeInsets.zero,
-                title: Text(orderStatusLabel(h['to_status'] as String)),
+                title: Text(
+                  h['event_type'] == 'request_decided'
+                      ? 'Talep ${h['request_decision'] == 'approved' ? 'onaylandı' : 'reddedildi'} — siparişe uygulanmadı'
+                      : orderStatusLabel(h['to_status'] as String),
+                ),
                 subtitle: Text('${h['created_at']}\n${h['reason'] ?? ''}'),
               ),
           ],

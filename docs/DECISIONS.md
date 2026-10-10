@@ -1,5 +1,21 @@
 # Pekşen Gıda — Karar kaydı
 
+**11 Ekim 2026 — Faz 8 kapanış teyidi:** Son kullanıcı onayı F8-02'yi kesinleştirir: approved/rejected yalnız talep kararıdır; sipariş submitted kalır, kalem/fiyat/toplam/rezervasyon değişmez. Alternatif kabul/ret yalnız niyet kaydıdır. F8-01/F8-02 ile sınırlandırılmış yerel kapsam tamamlandı; gerçek kalem revizyonu ve picking sonrası stok etkili işlemler bekler. Bu kapanışta yeni iş kuralı veya yetki eklenmedi; Faz 9 başlatılmadı.
+
+### F8-02 — Alternatif niyeti ve submitted talep kararı (10 Ekim 2026)
+
+Kullanıcı F8-01 temelini koruyarak bu dilimi onayladı. Ek soruya kesin cevabı: **“Evet, yalnız karar kaydı; gerçek revizyon beklesin.”** Aşağıdakiler F8-01'in karar/alternatif servisi kapalı ifadelerinden önce gelir.
+
+- Sales yalnız aktif atanmış müşterinin submitted kalemine ürün/birim ve pozitif integer miktarla alternatif niyeti sunar. Faz 5 quote minimum/birim denetimi kullanılır; teklif fiyat sabitlemez/stok ayırmaz. Aktif Customer kendi teklifini kabul/reddeder. Kabul, teklif ID'sine bağlı pending değişiklik talebi oluşturur. Ret asıl kalemi silmez. İki yanıt da alternatif audit olayı üretir. SPEC §11'in doğrudan kalem çıkarma/değiştirmesi bu açık onayla uygulanmaz.
+- Yalnız aktif Manager/Owner, **submitted siparişteki pending talebi** approved/rejected yapar. Diğer 12 sipariş durumu kapalıdır. `approved` sipariş durum sözlüğünde yoktur; tamamlanmış talep yeni karara kapalıdır. Aynı UUID/aktör/payload replay'i ikinci karar üretmez; güncel yetki ve submitted sınırı replay sırasında da denetlenir.
+- Karar yalnız talep kaydıdır: sipariş submitted, kalem/fiyat/exact snapshot/rezervasyon/finans aynı kalır. İptal talebinin onayı da otomatik iptal değildir. F8-01 Customer/Sales doğrudan submitted iptali gerçek iptal olarak ayrı kalır. UI bu ayrımı açıkça gösterir.
+- Yeni kararlarda `decided_by`, `decided_at` ve boş olmayan `decision_note` zorunludur. Aktör/zaman sunucuda üretilir; tamamlanmış kayıt immutable'dır. NOT VALID check **varsa eski immutable kararlara hayali not yazmadan** yeni INSERT/UPDATE'leri denetler; geçmişe toplu not backfill'i yapılmaz.
+- History'de `event_type=request_decided`, `request_id`, `request_decision` vardır. Bu olay submitted/submitted taşır, talep kararıyla aktör/not/status bakımından eşleşir; gerçek sipariş geçişi değildir. Normal status_changed olayında aynı durum hâlâ yasaktır. Composite FK aynı siparişi; unique request ID tek karar history'sini korur. Kullanıcının karar audit talebiyle B-08 izin listesine yalnız `order_request_decided` eklenir; order_applied=false kaydedilir.
+- Karar/history/audit/private receipt atomiktir; audit hatası hepsini rollback eder. Auth/profil → advisory key → müşteri → sipariş → talep/teklif kilitleri mevcut checkout/iptal sırasıyla uyumludur. Aynı key farklı aktör/payload reddedilir. Ham yazma/genel SELECT/RLS genişletmesi yok; denetlenen RPC projection'ları vardır. Warehouse/Accounting sınırları korunur.
+- Manager/Owner `/account/order-requests` kuyruğu ve notlu karar ekranı; Customer/Sales ortak siparişten alternatif ekranı vardır. Sales önerir, Customer cevaplar. Belirsiz ağ sonucunda açık diyalog aynı payload/key ile tekrar eder; offline kuyruk yoktur.
+
+**Bekletilenler:** Gerçek kalem revizyonunun temsil/snapshot/yeniden fiyat onayı/rezervasyon farkı sözleşmesi, karşı miktar ve eski kalemin kapanışı; picking sonrası telafi; stok yetersizliği onayı sonrası rezervasyon ve kalan operasyon geçişleri. R-01/R-02 değişmedi. Bunlar F8-02 yerel kabulünün parçası sayılmaz; Faz 9'a geçilmez. Manuel/üretim kabulü ayrı kalır.
+
 ### F8-01 — Onaylı iptal ve talep dilimi (9–10 Ekim 2026)
 
 Kullanıcı Faz 7'yi commit edilmiş/tamamlanmış kabul edip Faz 8'i yetkilendirdi. Bu turdaki açık cevapları kapsamı sınırlar:

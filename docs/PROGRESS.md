@@ -1,5 +1,25 @@
 # Pekşen Gıda ilerleme kaydı
 
+## Faz 8 kapanış kontrolü — 11 Ekim 2026
+
+Mevcut Git durumu ve diff korundu. 10 Ekim koşusunun komut bitiş logları yeniden incelendi: pub get, son analyze, 166/166 Flutter testi, debug build, local reset, sekiz pakette 680/680 DB assertion ve emulator-5554 üzerinde 5/5 integration testi çıkış **0** ile tamamlanmış. Başarılı kontroller bu kapanışta tekrar çalıştırılmadı; APK varlığı yerine bitmiş build logu esas alındı. Kanıtlar TESTING başındadır.
+
+Bu tur yalnız DECISIONS, PROGRESS ve TESTING güncellendi; önceki uygulama/migration/test değişiklikleri korundu. **Faz 8'in onaylı F8-01/F8-02 yerel kapsamı tamamlandı.** Gerçek kalem revizyonu, picking sonrası stok etkili işlemler ve bunların açık sözleşmeleri tamamlanmış sayılmaz. Manuel görsel ve gerçek backend ile Android uçtan uca kabul yapılmadı. Faz 9'a geçilmedi; secret, commit veya push yok.
+
+## Faz 8 devamı — 10 Ekim 2026, alternatif niyeti ve talep kararı
+
+Başlangıç HEAD `903d9ac`; önceki Faz 8 dilimi commit edilmiş ve çalışma ağacı temizdi. F8-01 iptal/talep temeli korunmuştur. F8-02 onayıyla Sales alternatif önerisi, Customer kabul/ret niyeti ve yalnız Manager/Owner submitted talep kararı eklendi. **Gerçek revizyon açık kullanıcı kararıyla bekler; karar onayı uygulama değildir.**
+
+- Kabul pending talep oluşturur; teklif kabul/ret kalem/tutar/stoğu değiştirmez. Customer kendi; Sales yalnız aktif atanmış müşterisiyle çalışır.
+- Submitted+pending için zorunlu notla karar, sunucuda aktör/zaman, ayrı history olayı/audit ve idempotent receipt. Picking ve diğer submitted dışı durumlarda hem onay hem ret kapalıdır. Audit hatasında talep/history de rollback olur. Önceki gerçek submitted iptali değişmedi.
+- Manager/Owner talep kuyruğu; Customer/Sales alternatif ekranı; karar notu/history ayrımı, repository/provider/routing ve testler eklendi. Ham yazmalar/anon ve Warehouse/Accounting sınırları korundu.
+
+**Dosyalar:** `20261010000100_order_review.sql` (11. migration, 35 public tablo korunur), `order_review_test.sql`; yeni order_review_repository, alternative_intent_page, order_review_page, review_action_dialog; mevcut workflow paneli, hesap menüsü/router; yeni Flutter/Android review testleri; business testinin yalnız not fixture'ları; PLAN/DECISIONS/PROGRESS/TESTING/supabase README. Önceki 10 migration, iki seed ve checkout servisleri değişmedi.
+
+**Sonuçlar:** pub get **0**, analyze **0**, Flutter **166/166 / 0** (151 mevcut + 15 yeni); local reset **0** (11 migration + 2 seed). Yeni review **62**, workflow **57**, Customer checkout **94**, Sales checkout **50**, pricing **73**, business **140**, auth_access **119**, account_scope **85**; toplam **680/680 DB / 0**. Debug build **0**, 18,2 saniye. Normal APK `build/app/outputs/flutter-apk/peksen-gida-phase8-review-debug.apk`, **238.092.588 bayt**. Android integration **5/5 / 0**; komut ve kabul sınırları TESTING'dedir.
+
+**Kabul:** Faz 8'in kullanıcı tarafından sınırlandırılan **F8-01/F8-02 yerel kapsamı tamamlandı**. emulator-5554 üzerinde Manager kararı, Customer alternatif kabulü, önceki iptal, Customer ve Sales checkout integration testleri **5/5 / 0** geçti. Fixture repository kullanır; gerçek backend kanıtı ayrı DB testleridir. Son git diff --check **0**. Gerçek revizyon, picking sonrası stok etkili onaylar ve sonraki operasyon geçişleri bekler; tamamlanmış sayılmaz. Manuel görsel, gerçek backend ile Android uçtan uca, process-kill ve çok bağlantılı yarış/stres yapılmadı. Faz 9 başlamadı; secret/commit/push/yayınlama yok.
+
 ## Faz 8 — 10 Ekim 2026, submitted iptali ve talep altyapısı
 
 **Onaylı dar dilim uygulandı; Faz 8 bütünü tamamlanmadı.** Başlangıç HEAD `3c28fab`, temiz çalışma ağacı; Faz 7 kullanıcı tarafından kabul/commit edildi. Kesinti öncesi Faz 8 dosyaları korunarak devam edildi. Kullanıcı F8-01 ile yalnız submitted iptali ve talep altyapısını bu tura aldı; alternatif uygulaması ve picking sonrası stok etkili onayları bekletti. Manager/Owner dışında talep karar yetkisi yoktur; bu tur karar verme RPC/UI'si açılmadı.

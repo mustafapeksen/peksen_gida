@@ -109,6 +109,13 @@ class _AccountPageState extends ConsumerState<AccountPage>
                         if (value.role == AccountRole.owner ||
                             value.role == AccountRole.manager)
                           TextButton(
+                            onPressed: () =>
+                                context.push('/account/order-requests'),
+                            child: const Text('Sipariş talepleri'),
+                          ),
+                        if (value.role == AccountRole.owner ||
+                            value.role == AccountRole.manager)
+                          TextButton(
                             onPressed: () => context.push('/account/admin'),
                             child: const Text('Hesap yönetimi'),
                           ),
