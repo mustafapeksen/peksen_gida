@@ -1,5 +1,7 @@
 # Pekşen Gıda çalışma kuralları
 
+**11 Ekim 2026 — Faz 11:** Kullanıcı Faz 10'u `348e937` ile commit edilmiş kabul ederek Faz 11'i açtı. F11-01: araç/sefer/ekip/sipariş ataması Manager/Owner; Driver yalnız kendi seferinde sıra/yola çıkış; araç ve iki Driver tek açık seferde. Yalnız picked atama, gerekçeli yükleme öncesi yeni durakla yeniden atama; loaded sonrası kapalı. Yola çıkış bütün açık siparişler loaded ise atomik out_for_delivery; GPS yok. Kapatma mevcut terminal teslimat olgularını gerektirir, onları üretmez. Eski “Faz 11 kapalı” notları tarihçedir; Faz 12 kapalıdır. Güncel kabul/komutlar PROGRESS/TESTING başındadır. Secret/commit/push yok.
+
 
 **11 Ekim 2026 — Faz 10:** Kullanıcı Faz 9'u commit edilmiş/kabul edilmiş saydı (`a11d662`); F10-01 tahsilat/cari kararları günceldir. Accounting yalnız atanmış müşterinin tahsilatını RPC ile doğrular; ham yazma/fiyat/maaş/audit kapalıdır. Sales aktif atama, Driver açık sefer/durak şartıyla kesinleşmiş teslimattan nakit/POS tahsil eder. Manager/Owner gerekçeli manuel limit ve yalnız cari nedenli pending onay/ret yapar. Snapshot ve stok yeniden kontrolü atomiktir. Düzeltme/iptal, stok eksiği onayı, revizyon/telafi/çeyrek ve Faz 11 kapalıdır. Son kanıtlar PROGRESS/TESTING başındadır; eski faz yasakları tarihçedir. Secret/commit/push yok.
 

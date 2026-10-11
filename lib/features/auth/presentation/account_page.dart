@@ -1,4 +1,5 @@
 import '../../finance/presentation/finance_page.dart' show canUseFinance;
+import '../../delivery/presentation/dispatch_page.dart' show canUseDispatch;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -90,48 +91,63 @@ class _AccountPageState extends ConsumerState<AccountPage>
                         const Text(
                           'Oturum açıldı. İş ekranları sonraki geliştirme fazlarında bağlanacak.',
                         ),
-                        if (canReadProducts(value.role))
-                          TextButton(
-                            onPressed: () => context.push('/account/products'),
-                            child: const Text('Ürünler ve birimler'),
-                          ),
-                        if (canUseFinance(value.role))
-                          TextButton(
-                            onPressed: () => context.push('/account/finance'),
-                            child: const Text('Tahsilat ve cari'),
-                          ),
-                        if (canUseInventory(value.role))
-                          TextButton(
-                            onPressed: () => context.push('/account/inventory'),
-                            child: const Text('Depo ve stok'),
-                          ),
-                        if (value.role == AccountRole.salesOperator)
-                          TextButton(
-                            onPressed: () => context.push('/account/sales'),
-                            child: const Text('Müşteri adına sipariş'),
-                          ),
-                        if (value.role == AccountRole.customer)
-                          TextButton(
-                            onPressed: () => context.push('/account/shop'),
-                            child: const Text('Katalog ve sepet'),
-                          ),
-                        TextButton(
-                          onPressed: () => context.push('/account/password'),
-                          child: const Text('Parola değiştir'),
+                        Wrap(
+                          spacing: 8,
+                          children: [
+                            if (canReadProducts(value.role))
+                              TextButton(
+                                onPressed: () =>
+                                    context.push('/account/products'),
+                                child: const Text('Ürünler ve birimler'),
+                              ),
+                            if (canUseFinance(value.role))
+                              TextButton(
+                                onPressed: () =>
+                                    context.push('/account/finance'),
+                                child: const Text('Tahsilat ve cari'),
+                              ),
+                            if (canUseDispatch(value.role))
+                              TextButton(
+                                onPressed: () =>
+                                    context.push('/account/dispatch'),
+                                child: const Text('Araç ve seferler'),
+                              ),
+                            if (canUseInventory(value.role))
+                              TextButton(
+                                onPressed: () =>
+                                    context.push('/account/inventory'),
+                                child: const Text('Depo ve stok'),
+                              ),
+                            if (value.role == AccountRole.salesOperator)
+                              TextButton(
+                                onPressed: () => context.push('/account/sales'),
+                                child: const Text('Müşteri adına sipariş'),
+                              ),
+                            if (value.role == AccountRole.customer)
+                              TextButton(
+                                onPressed: () => context.push('/account/shop'),
+                                child: const Text('Katalog ve sepet'),
+                              ),
+                            TextButton(
+                              onPressed: () =>
+                                  context.push('/account/password'),
+                              child: const Text('Parola değiştir'),
+                            ),
+                            if (value.role == AccountRole.owner ||
+                                value.role == AccountRole.manager)
+                              TextButton(
+                                onPressed: () =>
+                                    context.push('/account/order-requests'),
+                                child: const Text('Sipariş talepleri'),
+                              ),
+                            if (value.role == AccountRole.owner ||
+                                value.role == AccountRole.manager)
+                              TextButton(
+                                onPressed: () => context.push('/account/admin'),
+                                child: const Text('Hesap yönetimi'),
+                              ),
+                          ],
                         ),
-                        if (value.role == AccountRole.owner ||
-                            value.role == AccountRole.manager)
-                          TextButton(
-                            onPressed: () =>
-                                context.push('/account/order-requests'),
-                            child: const Text('Sipariş talepleri'),
-                          ),
-                        if (value.role == AccountRole.owner ||
-                            value.role == AccountRole.manager)
-                          TextButton(
-                            onPressed: () => context.push('/account/admin'),
-                            child: const Text('Hesap yönetimi'),
-                          ),
                       ],
                     ),
             ),

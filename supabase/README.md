@@ -1,5 +1,9 @@
 # Pekşen Gıda yerel backend
 
+**Faz 11 / F11-01:** On dördüncü migration `20261011000300_delivery_dispatch.sql`: `dispatch_workspace()` açık alan listeli okuma; `dispatch_action(action,data,request_key)` denetlenen araç, ekipli sefer, picked atama/yeniden atama, Driver sırası/depart, Manager/Owner plan iptali/sefer kapatması. Ham yazmalar ve anonim erişim kapalı; yeni private receipt RLS açık. Mevcut 13 migration/iki seed değişmez. Yeni seferler `dispatch_managed=true`; eski serbest durumlar dönüştürülmez. Atama picked bırakır; Warehouse eski yükleme servisini kullanır. Yola çıkış bütün açık siparişler loaded ise atomiktir; GPS/teslimat onayı/stok/tahsilat üretmez.
+
+Yeni paket: `npx.cmd --yes supabase@2.119.0 test db --local supabase/tests/database/delivery_dispatch_test.sql`. Gerçek iki bağlantılı yarış: temiz yerel reset sonrası `python supabase/tests/client/dispatch_concurrency_test.py`; yalnız sabit yerel Docker container'ında sentetik kayıtlar kullanır. **Sonrasında `npx.cmd --yes supabase@2.119.0 db reset --local` gerekir.** Git commit/push yapmaz. Güncel sayılar ve manuel kabul sınırları docs/TESTING başında, kurallar DECISIONS F11-01'dedir.
+
 
 **Faz 10 / F10-01:** `20261011000200_accounting_payments_credit.sql` 13. migration'dır. Tahsilat (`record_payment`), atanmış müşteri için Accounting doğrulaması (`verify_payment`), Manager/Owner gerekçeli limit (`set_customer_credit_limit`), yalnız credit başvurusu kararı (`decide_credit_approval`) ve açık alan listeli `finance_workspace` eklendi. Checkout fiyat/snapshot/yeniden onayı koruyarak müşteri kilidi altında exposure denetler. Limit NULL ise önceki not_evaluated uyarısı korunur; stok kuyruğu cari kuyruğuna dönüştürülmez. Ham tablo yazmaları ve anonim erişim kapalıdır; önceki migration/seed dosyaları korunur. Yeni finance receipt aynı isteği tekrar güvenli kılar. Açık düzeltme/telafi/teslimat işlemleri uygulanmaz.
 

@@ -1,5 +1,21 @@
 # Pekşen Gıda ilerleme kaydı
 
+## Faz 11 — 11 Ekim 2026, araç/sefer/durak
+
+Başlangıç temiz `main`, son commit `348e937` (Faz 10). Kullanıcının üç açık onayı DECISIONS **F11-01**'de; son devam talebi yalnız kapanış/doğrulamadır. Mevcut değişiklikler korunmuş, önceki fazlar yeniden oluşturulmamıştır.
+
+**Uygulananlar:** Manager/Owner araç yönetimi, primary/assistant ekipli plan oluşturma ve tamamen picked sipariş atama; araç ve driver için tek açık sefer. Gerekçeli, yükleme öncesi yeniden atama eski durağı kapatır ve yeni durağı geçmişe bağlar; sipariş picked ve bütün finans/stok snapshotları aynı kalır. Atanmış iki Driver açık/tamamlanmamış durakları sıralar; Manager/Owner'a sıra değiştirme yetkisi verilmez. Warehouse eski load RPC'sini kullanır. Bütün açık siparişler loaded ise Driver'ın yola çıkışı tek transaction'da run in_progress + siparişler out_for_delivery/history/audit/receipt yazar. Plan iptali ve sefer tamamlaması yalnız onaylı mevcut olgularla çalışır; teslimat/stok/tahsilat olgusu üretmez. Ham yazmalar/anon kapalıdır.
+
+**Flutter:** `/account/dispatch`, rol kontrollü araç/sefer formu, picked atama/gerekçe, Driver sıra ve yola çıkış, Manager/Owner iptal/kapatma. Yükleniyor/boş/hata/yenileme, küçük ekran/klavye/geri davranışı; açık sayfada beş saniyelik yenileme. Belirsiz istek proje/aktör bazlı şifreli kayıttan aynı anahtarla sürdürülür. Hesap bağlantıları satıra sarılır; yeni bağlantının Manager/Owner çıkış düğmesini aşağı itmesi giderildi, eski testler değiştirilmedi. Preview/Auth/Customer/Sales/finans/depo akışları korundu.
+
+**Değişen dosyalar:** yeni `supabase/migrations/20261011000300_delivery_dispatch.sql`, `supabase/tests/database/delivery_dispatch_test.sql`, `supabase/tests/client/dispatch_concurrency_test.py`; `lib/features/delivery/data/dispatch_repository.dart`, `presentation/dispatch_page.dart`; router ve hesap ekranı; `test/dispatch_test.dart`, `test/dispatch_repository_test.dart`, `integration_test/dispatch_smoke_test.dart`; AGENTS, DECISIONS, PLAN, PROGRESS, TESTING ve supabase/README. Önceki 13 migration, iki seed, eski DB ve Flutter test dosyaları korunur. Yeni private receipt tablosu RLS açık ve istemciye kapalıdır.
+
+**Kanıt:** pub get/analyze **0**, tam Flutter **205/205 / 0** (191 önceki + 14 yeni), son UI yetki kontrolünden sonra ilgili Flutter **14/14 / 0**. Son DB **79/79 / 0** (ilk 73'e altı sınır regresyonu eklendi); önceki ilgili dokuz paket **752/752 / 0**, finans **98/98 / 0**, toplam **929 assertion**. İki gerçek DB bağlantısıyla **6/6 / 0**; ardından local reset **0** ile sentetik yarış kayıtları temizlendi ve son migration tekrar uygulandı. Android emulator-5554: dispatch 2, finans 2, depo 1, talep/alternatif 2, Customer 1, Sales 1; **9/9 / 0**, bitiş **11 Ekim 2026 17:48:15 +03:00**. Sonuçlar `build/phase11-validation-20261011/` altındaki komut/çıkış/bitiş loglarıyla doğrulandı; Android ve önceki başarılı geniş paketler kapanışta tekrarlanmadı.
+
+**Kapanış durumu:** Faz 11'in onaylı **F11-01 yerel kapsamı tamamlandı**. Son normal `flutter build apk --debug` **çıkış 0**, **75,7 s**, bitiş **11 Ekim 2026 23:19:11 +03:00**. Korunan APK `build/app/outputs/flutter-apk/peksen-gida-phase11-debug.apk`, **238.151.931 bayt**; son UI yetki daraltmasını içerir. Son `git diff --check` **0**. Docker kapanmış olduğundan son DB koşusu önce bağlantı hatası/1 verdi; mevcut Docker Desktop başlatıldı, container'lar açılınca yalnız yeni DB paketi tekrarlandı ve 79/79 geçti. Backend/env/secret ayarı değiştirilmedi.
+
+**Kabul sınırı / kalan işler:** Manuel Android görsel kontrol, gerçek backend ile Android uçtan uca ve şifreli isteğin cihaz process-kill sonrası kabulü yapılmadı; otomatik fixture/SDK testleri bunların yerine geçmez. SPEC'teki Realtime taşıması uygulanmış sayılmaz; bu fazda dar workspace polling vardır, GPS/Realtime/MapLibre Faz 12'de kalır. Başlamış/yüklenmiş seferde ekip değişimi ve eski seferlerin taşınması açık karardır. Sefer kapatma için gereken durak/teslimat kesinleştirme servisi sonraki fazdadır; DB testlerinde bu mevcut olgular sentetik fixture ile sağlanır. Gerçek revizyon, stok telafisi, stok eksiği onayı, tahsilat düzeltme/iptal ve çeyrek/iskonto açılmadı. Faz 12'ye geçilmedi; secret, commit, push veya yayınlama yapılmadı.
+
 
 ## Faz 10 — 11 Ekim 2026, tahsilat ve cari
 

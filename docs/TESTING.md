@@ -1,5 +1,45 @@
 # Pekşen Gıda doğrulama ve test planı
 
+## Faz 11 doğrulaması — 11 Ekim 2026
+
+Kanıt dizini `build/phase11-validation-20261011/`; loglar `COMMAND`, `EXIT_CODE`, `END` içerir. Kesinti sonrası başarılı önceki geniş koşular yeniden çalıştırılmadı. Son Manager/Owner sıra yetkisi daraltması ve kapanış guard düzenlemesi için yalnız ilgili testler tamamlandı. Başarısız geliştirme denemeleri aşağıdaki başarı toplamına dahil değildir.
+
+| Komut | Sonuç | Çıkış |
+| --- | --- | ---: |
+| `flutter pub get` | Başarılı; bağımlılık/lock değişmedi | 0 |
+| `flutter analyze` | Son kaynakta No issues found | 0 |
+| `flutter test --reporter expanded` | 205/205 (191 mevcut + 14 yeni) | 0 |
+| `flutter test test/dispatch_test.dart test/dispatch_repository_test.dart --reporter expanded` | Son UI sınırından sonra 14/14 | 0 |
+| `flutter build apk --debug` | Son UI kaynağıyla başarılı, 75,7 s; bitiş 23:19:11 +03:00 | 0 |
+| `npx.cmd --yes supabase@2.119.0 db reset --local` | 14 migration + iki seed; yarış sonrası temizlik ve son migration | 0 |
+| Aynı CLI `test db --local supabase/tests/database/delivery_dispatch_test.sql` | Son paket 79/79 PASS; ilk koşu 73, ek altı sınır regresyonu | 0 |
+| Aynı CLI, önceki dokuz ilgili DB paketi | 752/752 PASS | 0 |
+| Aynı CLI `test db --local supabase/tests/database/finance_test.sql` | 98/98 PASS | 0 |
+| `python supabase/tests/client/dispatch_concurrency_test.py` | İki gerçek bağlantıda 6/6 PASS; sonrasında reset | 0 |
+| Aşağıdaki Android integration komutu | emulator-5554 üzerinde 9/9, bitiş 17:48:15 +03:00 | 0 |
+| `git diff --check` | Başarılı | 0 |
+
+Normal son APK `build/app/outputs/flutter-apk/peksen-gida-phase11-debug.apk`, **238.151.931 bayt**. Başarı APK'nın varlığından değil `build-apk.log` bitiş/çıkış kaydından doğrulandı. F11-01'in onaylı yerel kabulü tamamlandı; aşağıdaki yapılmayan kontroller ayrı kalır.
+
+İlgili eski DB paketleri değişmedi: warehouse_inventory 70, account_scope 85, auth_access 121, business_foundation 140, product_pricing 73, customer_checkout 94, sales_checkout 50, order_workflow 57, order_review 62. Finans 98 ve dispatch 79 ile toplam **929 assertion**. Identity/onboarding/eski yerel Auth paketleri bu kapanışta tekrar koşulmadı; önceki sonuçlar tarihsel kayıtlardadır.
+
+```powershell
+npx.cmd --yes supabase@2.119.0 test db --local supabase/tests/database/delivery_dispatch_test.sql
+# Yarış testi yalnız sentetik yerel DB'de; önce ve sonra db reset --local gerekir:
+python supabase/tests/client/dispatch_concurrency_test.py
+flutter test integration_test/dispatch_smoke_test.dart integration_test/finance_smoke_test.dart integration_test/inventory_smoke_test.dart integration_test/order_review_smoke_test.dart integration_test/customer_checkout_smoke_test.dart integration_test/sales_checkout_smoke_test.dart -d emulator-5554
+```
+
+**Yeni DB kapsamı:** Anonim/ham yazma kapalı; rol ve primary/assistant ayrımı; Manager reorder/depart kapalı; pasif Driver ve hesap pasifleştirme koruması; aktif araç/ekip, araç/driver kaynak paylaşımı; picked atama ve loaded yeniden atama reddi; gerekçe/önceki durak ve geçmiş; tam sıra permütasyonu, tamamlanmış durak korunması; boş/karma yüklenmiş sefer reddi; iki siparişin atomik yola çıkışı, audit hatasında rollback, tek history/receipt; iptal/kapatma sınırları; stok/ödeme/GPS yazılmaması. Önceki çalışan rol yönetimi değiştirilmedi; ekip rolü sonradan değişmiş olsa da hiç başlamamış/açık durağı olmayan plan iptali kaynakları serbest bırakabilir.
+
+**Eşzamanlılık kapsamı:** Araç çakışması, assistant'ın primary kaynak slotunu da işgal etmesi, aynı-key tek sefer, atama–yükleme beklemesi, yüklemenin yeniden atamayı engellemesi, aynı-key tek yola çıkış. Standart Python + Docker içi psql/Unix socket kullanır, credential dosyası okumaz; üretim yük testi değildir.
+
+**Flutter kapsamı:** Dört yetkisiz rol deep link reddi/ağa çıkmama, Owner araç/ekip formu, zorunlu alan/gerekçe, Driver sıra/depart, Manager kontrolünün gizlenmesi, kapanmış/tamamlanmış durak, belirsiz istekte payload/key korunması ve şifreli kayıt geri alma, SQL ret/hata/boş/yükleniyor, otomatik yenileme, 320×568 klavye/taşma ve geri akışı. Bir SDK testi gerçek Supabase Dart istemcisini sentetik localhost HTTP yanıtıyla ve şifreli saklama mock'uyla sınar; gerçek Supabase/Auth uçtan uca testi değildir. Android 9 test fixture repository kullanır, manuel görsel kabul değildir.
+
+**Giderilen doğrulama sorunları:** DB fixture yardımcısının yanlış rolü ve çok siparişli history operation_key çakışması giderildi. İlk Flutter koşusundaki SDK test import yolu ve yeni menünün çıkış düğmesini aşağı itmesi düzeltildi; eski testler zayıflatılmadı. Yarış fixture'ında eski yükleme anahtarını yeni işlem gibi kullanmak yerine ikinci gerçek checkout/toplama siparişi oluşturuldu. Son kapanışta Docker durmuştu: DB bağlantısı reddi çıkış 1 sonrası mevcut Docker Desktop başlatıldı; 79/79 tekrar koşusu çıkış 0. Başarısız deneme başarılı sayılmaz.
+
+**Yapılmayanlar:** Manuel Android ekran/görsel kontrol, canlı yerel backend ile Android uçtan uca, Android process-kill sonrası bekleyen dispatch isteği, çok cihazlı gerçek Realtime, GPS/gerçek cihaz/üretim kabulü. Manuel kontrol: Manager araç/iki sürücü/atama; Warehouse yükleme; primary ve assistant ile sıra/yola çıkış; başka Manager ekranında beş saniyelik güncelleme; dar ekran/klavye/geri ve bağlantı kesilip geri gelen aynı isteğin sonucu. Faz 12 başlatılmaz.
+
 
 ## Faz 10 doğrulaması — 11 Ekim 2026
 
