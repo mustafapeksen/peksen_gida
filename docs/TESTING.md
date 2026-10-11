@@ -1,5 +1,41 @@
 # Pekşen Gıda doğrulama ve test planı
 
+
+## Faz 10 doğrulaması — 11 Ekim 2026
+
+Kanıt dizini `build/phase10-validation-20261011/`; son tamamlanan komut logları `COMMAND`, `EXIT_CODE`, `END` taşır. `finance-concurrency-result.log`, tamamlanmış araç oturumu 31375'in çıktısı/çıkış kaydıdır; yeniden çalıştırılmış sayılmaz. Başarısız geliştirme denemeleri başarı sayılmadı; aşağıdaki sonuçlar düzeltme sonrası son koşulardır.
+
+| Komut | Sonuç | Çıkış |
+| --- | --- | ---: |
+| `flutter pub get` | Başarılı; bağımlılık ve lock değişmedi | 0 |
+| `flutter analyze` | No issues found | 0 |
+| `flutter test --reporter expanded` | 191/191 (179 mevcut + 12 yeni) | 0 |
+| `flutter build apk --debug` | Built app-debug.apk, 48,7 s | 0 |
+| `npx.cmd --yes supabase@2.119.0 db reset --local` | Son migration dahil 13 migration + iki seed | 0 |
+| Aynı CLI `test db --local supabase/tests/database/finance_test.sql` | 98/98 PASS | 0 |
+| Aynı CLI ile ilgili dokuz paket, aşağıdaki liste | 752/752 PASS | 0 |
+| `python supabase/tests/client/finance_concurrency_test.py` | Gerçek ayrı bağlantılarda 3/3 PASS; ardından reset | 0 |
+| emulator-5554: aşağıdaki integration komutu | 7/7 PASS; bitiş 11 Ekim 2026 10:47:59 +03:00 | 0 |
+| `git diff --check` | Başarılı | 0 |
+
+İlgili eski paketler değişmedi: `warehouse_inventory` 70, `account_scope` 85, `auth_access` 121, `business_foundation` 140, `product_pricing` 73, `customer_checkout` 94, `sales_checkout` 50, `order_workflow` 57, `order_review` 62. Dosyaların tümü `supabase/tests/database/<ad>_test.sql`; tek `test db --local` çağrısına bu dokuz yol verilerek çalıştırıldı. Yeni finans ile toplam **850 assertion**. Etkilenmeyen identity/onboarding/eski Auth client paketleri bu tur gereksiz yere tekrarlanmadı; geçmiş başarıları aşağıdaki kayıtlardadır.
+
+Yeni DB paketi: anonim/rol/atanmış müşteri kapsamı, Accounting ham yazma/audit/maaş sınırı, gerçekleşmiş teslimat kanıtı, partial/POS, fazla/negatif/sıfır ödeme, gerçek collector/verifier, aynı-key replay/farklı payload, doğrulamada ikinci borç düşümü olmaması, eski düzeltmede hesabın kapanması, limit gerekçesi/0/eşik eşitliği, dahil/hariç exposure durumları, varsayılan vade yokluğu/açık ayar/override/tarihsel snapshot, yalnız credit başvurusu, stok yeniden denetimi ve tarihsel dönüşüm, talep/kalemlerin korunması, ödeme/cari karar audit hatasında transaction rollback. Üç gerçek yarış: farklı anahtarlı fazla ödeme engeli, aynı anahtarlı tek tahsilat ve aynı anahtarlı tek cari rezervasyon. Bunlar üretim yük/stres testi değildir.
+
+Flutter yeni 11 widget testi rol/deep link, exact kuruş, POS, sıfır/kesirli kuruş reddi, gerekçe, limit/onay/ret, yükleniyor/hata/boş, kalıcı bekleyen istek geri yükleme, küçük ekran/klavye ve geri akışını doğrular. Ek 1 SDK/repository testi gerçek Supabase Dart istemcisini sentetik localhost HTTP sunucusuna karşı çalıştırır: büyük kuruş değerleri string kalır, şifreli saklama mock'unda repository yeniden oluşturulunca anahtar korunur, farklı aktör ayrılır, belirsiz cevapta farklı istek ağa çıkmaz, kesin SQL reddi düzeltmeye izin verir. **Gerçek Supabase/Auth uçtan uca istemci testi değildir.**
+
+Android cihaz `flutter devices` ile emulator-5554, Android 17/API 37 olarak doğrulandı. Aşağıdaki komut tamamlandı: finans 2, depo 1, talep/alternatif 2, Customer 1 ve Sales 1 olmak üzere **7/7**, çıkış **0**. `integration.log` sonu `All tests passed!`, `EXIT_CODE: 0` ve `END: 2026-10-11T10:47:59.9831969+03:00` içerir. Kapanışta bu kanıt okunarak bekleyen durum giderildi; başarılı komutlar yeniden çalıştırılmadı. Yalnız belge değişikliğinden sonra `git diff --check` yeniden çalıştırıldı, çıkış **0**.
+
+Tamamlanan komut:
+
+```powershell
+flutter test integration_test/finance_smoke_test.dart integration_test/inventory_smoke_test.dart integration_test/order_review_smoke_test.dart integration_test/customer_checkout_smoke_test.dart integration_test/sales_checkout_smoke_test.dart -d emulator-5554
+```
+
+Testler fixture repository kullanır. Gerçek Android'de form/gezinti davranışı sınanır; gerçek backend işlemi ayrı DB testlerinin konusudur. Manuel görsel inceleme, gerçek backend ile Android tahsilat/limit akışı, cihaz process-kill finans retry ve üretim/gerçek cihaz kabulü yapılmadı. Görülmeyen ekran görsel kabul sayılmadı. Normal uygulama APK'sı integration derlemesinden önce `build/app/outputs/flutter-apk/peksen-gida-phase10-debug.apk` olarak korundu: **238.128.981 bayt**. Build kanıtı dosyanın varlığı değil biten build komutu/çıkış 0'dır. Gradle native-access uyarıları build sonucunu değiştirmedi.
+
+Tekrar koşulacaksa: yerel Docker açık → pinned CLI `db reset --local` → DB paketleri; yarış testi yalnız temiz sentetik yerel DB'de çalışır ve **sonrasında reset gerekir**. `.env` okunmadı/değiştirilmedi; test komutları cloud hedefi veya gerçek credential kullanmaz. Faz 11/teslimat/correction servisleri bu doğrulamanın parçası değildir.
+
 ## Faz 9 doğrulaması — 11 Ekim 2026
 
 Kanıt dizini `build/phase9-validation-20261011/`; CLI/Flutter logları COMMAND/EXIT_CODE/END içerir. `concurrency-result.log` tamamlanmış araç oturumunun çıktı/çıkış kaydıdır, tekrar çalıştırılmış gibi gösterilmez. Aşağıdaki sonuçlar yeni Faz 9 koşusudur.

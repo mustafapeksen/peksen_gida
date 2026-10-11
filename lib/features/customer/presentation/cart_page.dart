@@ -167,7 +167,15 @@ class _CartPageState extends ConsumerState<CartPage> {
         setState(() {
           _uncertain = false;
           _notice =
-              'Sipariş kaydedildi: ${result['order_id']}\n${result['status'] == 'submitted' ? 'Gönderildi; stok ayrıldı.' : 'Stok yetersiz; yönetici onayı bekleniyor, stok ayrılmadı.'}\nCari kontrol hesaplanmadı. Borç/tahsilat kaydı oluşturulmadı.';
+              'Sipariş kaydedildi: ${result['order_id']}\n${result['status'] == 'submitted'
+                  ? 'Gönderildi; stok ayrıldı.'
+                  : result['approval_cause'] == 'credit'
+                  ? 'Cari limit aşıldı; yönetici onayı bekleniyor, stok ayrılmadı.'
+                  : 'Stok yetersiz; yönetici onayı bekleniyor, stok ayrılmadı.'}\n${result['credit_check_state'] == 'within_limit'
+                  ? 'Cari limit içinde.'
+                  : result['credit_check_state'] == 'exceeded'
+                  ? 'Cari limit aşıldı.'
+                  : 'Cari kontrol hesaplanmadı.'} Borç/tahsilat kaydı oluşturulmadı.';
         });
       } else {
         throw StateError('Unknown checkout result');
@@ -255,7 +263,7 @@ class _CartPageState extends ConsumerState<CartPage> {
                   child: const Text('Bekleyen gönderimi yeniden yükle'),
                 ),
               const Text(
-                'Cari limit/exposure henüz hesaplanmıyor. Gönderim borç veya tahsilat oluşturmaz.',
+                'Cari limit sunucuda kontrol edilir. Gönderim borç veya tahsilat oluşturmaz.',
               ),
               TextButton(
                 onPressed: _busy || _uncertain ? null : () => _draft(true),

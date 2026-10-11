@@ -1,3 +1,5 @@
+import '../../features/finance/presentation/finance_page.dart';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -78,6 +80,10 @@ GoRouter createAppRouter({
         path: '/account',
         builder: (context, state) => const AccountPage(),
         routes: [
+          GoRoute(
+            path: 'finance',
+            builder: (context, state) => const FinancePage(),
+          ),
           GoRoute(
             path: 'inventory',
             builder: (context, state) => const InventoryPage(),

@@ -1,5 +1,24 @@
 # Pekşen Gıda ilerleme kaydı
 
+
+## Faz 10 — 11 Ekim 2026, tahsilat ve cari
+
+Başlangıç çalışma ağacı temiz; son commit `a11d662` (Faz 9), mevcut branch `main` bir commit ahead. Yarım Faz 10 dosyası bulunmadı. Kullanıcının dört kesin onayı **F10-01** olarak DECISIONS başına işlendi; eski faz/cari sınırları tarihçedir.
+
+**Uygulananlar:** Sales aktif atanmış müşteri / Driver açık sefer-durak üzerinden kesinleşmiş teslimattan nakit/POS tahsilat; fiili aktör, kısmi ödeme, fazla ödeme reddi; Accounting yalnız atanmış müşteride RPC doğrulaması. Manager/Owner gerekçeli manuel limit ve yalnız credit nedenli pending onay/ret. Exposure onaylı durum listesiyle hesaplanır; limit NULL ise önceki uyarı korunur. Cari onayı kayıtlı snapshotlarla stoğu yeniden denetler ve rezervasyon+submitted/history/audit/receipt'i atomik yazar. Eski stock/legacy kuyruğu açılmaz. Belirsiz düzeltme/uyuşmazlık verisinde hesap/bağımlı işlem kapalı kalır. Borç yalnız kesinleşmiş teslimat içindir; checkout borç/tahsilat yazmaz.
+
+**Flutter:** `/account/finance` rol kontrollü tahsilat, doğrulama, limit ve cari karar ekranları; form/gerekçe/nakit-POS seçimi, yükleniyor/boş/hata/yenileme ve küçük ekran/geri akışı. Finans isteği şifreli proje/aktör bazlı yerel kayıttan aynı anahtarla geri yüklenir; belirsiz isteğin üzerine yeni işlem gönderilmez. Customer/Sales sepeti cari ve stok bekleme nedenlerini ayırır. Preview/auth/RLS temelini ve önceki 12 migration/iki seed/test dosyalarını değiştirmeden ilerledi.
+
+**Değişen dosyalar:** yeni `supabase/migrations/20261011000200_accounting_payments_credit.sql`, `supabase/tests/database/finance_test.sql`, `supabase/tests/client/finance_concurrency_test.py`; `lib/features/finance/data/finance_repository.dart`, `presentation/finance_page.dart`; router, hesap ekranı ve ortak cart ekranı; `test/finance_test.dart`, `test/finance_repository_test.dart`, `integration_test/finance_smoke_test.dart`; AGENTS, DECISIONS, PLAN, PROGRESS, TESTING ve supabase/README.
+
+**Doğrulama:** pub get/analyze **0**; Flutter **191/191 / 0** (179 mevcut + 12 yeni); debug APK **0**, 48,7 s. Local reset **0**, 13 migration/iki seed. Yeni finans **98/98 / 0**, ilgili eski dokuz DB paketi **752/752 / 0**, toplam **850 assertion**. Gerçek iki bağlantılı yarış **3/3 / 0**; ardından reset ile sentetik değişiklikler temizlendi. Normal APK `build/app/outputs/flutter-apk/peksen-gida-phase10-debug.apk`, **238.128.981 bayt**. Son kanıtlar `build/phase10-validation-20261011/` içindedir. İlk SQL alias/fixture hataları düzeltildi; Flutter tam koşusundaki iki Sales görünürlük hatası uzun cari metni kısaltılarak giderildi, mevcut testler değiştirilmedi.
+
+**Durum:** Faz 10'un onaylı **F10-01 yerel kapsamı tamamlandı**. emulator-5554 üzerinde finans (2), depo (1), talep/alternatif (2), Customer checkout (1) ve Sales checkout (1) integration testleri **7/7 / çıkış 0** ile tamamlandı. Bitiş kaydı 11 Ekim 2026 **10:47:59 +03:00**; fixture repository kullanan Android 17/API 37 testleridir. Manuel görsel ve gerçek backend ile Android uçtan uca kabul yapılmadı. SDK HTTP testi gerçek istemciyi sentetik yerel HTTP yanıtıyla sınar; canlı Auth/DB uçtan uca testi olarak sunulmaz. Şifreli yeniden deneme Android process-kill testi yapılmadı; repository yeniden oluşturma/aktör ayrımı SDK testiyle doğrulandı.
+
+**Kapanış teyidi:** Kesinti sonrası mevcut Git diff ve bitiş logları incelendi; başarılı test/build/reset koşuları tekrarlanmadı. Yalnız PROGRESS, TESTING, DECISIONS ve PLAN kapanışları güncellendi; uygulama, migration, seed ve test dosyaları korundu. Son `git diff --check` çıkış **0**.
+
+**Kalan kararlar / kapsam dışı:** Tahsilat düzeltme/iptal ve disputed/cancelled kayıtların net etkisi; picking sonrası stok telafisi, stok yetersizliği onayı, gerçek kalem revizyonu, çeyrek/iskonto ve sonraki teslimat servisleri kapalıdır. Varsayılan vade değeri yok; mevcut snapshot yoksa yalnız açık ayardan tarih gösterilir, teslimat kesinleşirken snapshot yazılması gelecekteki teslimat servisindedir. Faz 11 başlatılmadı. Secret, Git commit, push veya yayınlama yapılmadı.
+
 ## Faz 9 — 11 Ekim 2026, depo/stok
 
 Başlangıç çalışma ağacı temiz, HEAD `b985a0c` (Faz 8 commit'i). PLAN/SPEC ve mevcut sözleşmeler incelendi; kullanıcı üç F9-01 sorusunu onayladı. Önceki 11 migration/iki seed, Customer/Sales checkout ve F8 iptal/talep/alternatif niyet servisleri korunur.

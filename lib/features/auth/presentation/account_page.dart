@@ -1,3 +1,5 @@
+import '../../finance/presentation/finance_page.dart' show canUseFinance;
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -92,6 +94,11 @@ class _AccountPageState extends ConsumerState<AccountPage>
                           TextButton(
                             onPressed: () => context.push('/account/products'),
                             child: const Text('Ürünler ve birimler'),
+                          ),
+                        if (canUseFinance(value.role))
+                          TextButton(
+                            onPressed: () => context.push('/account/finance'),
+                            child: const Text('Tahsilat ve cari'),
                           ),
                         if (canUseInventory(value.role))
                           TextButton(
