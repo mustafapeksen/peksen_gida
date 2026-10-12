@@ -1,5 +1,13 @@
 # Pekşen Gıda ilerleme kaydı
 
+## 12 Ekim 2026 — Fiziksel cihaz LAN erişimi düzeltildi
+
+Temiz `7390a7d` üzerinden yalnız debug/local bağlantı ve test hesabı hazırlığı yapıldı. Kök neden Dart config'in LAN HTTP adresini reddetmesiydi; 10.0.2.2 ayrıcalığı Android manifestinde değil config allowlist'indeydi. Debug için literal RFC1918 desteği ve dar yerel native HTTP politikası eklendi; release/profile HTTP açılmadı. Ignore edilen `.env` içinde yalnız public URL LAN'a çevrildi, anahtarlara dokunulmadı.
+
+Fiziksel SM-S918B (`R5CW30NE8ZV`, API 36) üzerinde LAN Auth HTTP ve Supabase SDK testi 1/1, normal `flutter run --dart-define-from-file=.env -d R5CW30NE8ZV --no-resident` başarılı; clean/pub get/analyze/17 config testi ve diff check çıkışları 0. Komutlar ve sekiz seed hesabının kurtarma/davet yönergeleri TESTING'in ilk bölümündedir. Parola üretilmedi/atanmadı; seed, roller ve migration'lar değişmedi. Kalıcı assistant hesabı yok; Owner/Manager mevcut davet akışıyla Driver oluşturup assistant atamalı.
+
+Sıradaki iş: telefonda `driver@peksen.invalid` için Parolamı unuttum→Mailpit kurtarma kodu→kişinin belirlediği parola→giriş. Aktif sefer/primary atama/yükleme/yola çıkış önkoşulları sağlandıktan sonra gerçek GPS kabulü yapılır. **Faz 12 halen tamamlanmadı:** ekran kapalı GPS/izin/ağ kopması/uçtan uca bitiş, üretim harita sağlayıcısı/lisansı ve assistant kaynak devri açık. Faz 13'e geçilmedi; commit/push yok. Aşağıdaki “yalnız emulator bağlı” notu önceki koşunun tarihçesidir.
+
 ## 12 Ekim 2026 — Faz 12 yerel kapanış; gerçek cihaz kabulü açık
 
 Faz 11 `f63df15` ile commit edilmiş temiz çalışma ağacından devam edildi. F12-01 kullanıcı onayları: primary GPS, son nokta/15 saniye/60 saniye, erişim bitiminde silme, offline kuyruksuz paylaşım ve yapılandırılabilir debug demo haritası. Faz 13 açılmadı.

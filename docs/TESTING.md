@@ -1,5 +1,45 @@
 # Pekşen Gıda doğrulama ve test planı
 
+## 12 Ekim 2026 — Fiziksel Android LAN ve rol hesabı hazırlığı
+
+Başlangıç temiz `7390a7d`. Fiziksel cihaz `R5CW30NE8ZV` (Samsung SM-S918B, API 36); emülatör ayrı hedeftir. **Kesin neden:** `SupabaseConfig` HTTP allowlist'i yalnız localhost/loopback/10.0.2.2 içeriyordu; `192.168.0.100` SDK başlangıcından önce reddediliyordu. Giriş ekranının hazır olması gerçek ağ isteği başarısı anlamına gelmez. Android main/debug manifestlerinde `usesCleartextTraffic` veya network security config yoktu; Android tarafında 10.0.2.2'ye özel izin bulunmuyordu.
+
+Debug config artık literal RFC1918 IPv4 adreslerini kabul eder; public HTTP ve release/profile HTTP reddi sürer. `src/debug/AndroidManifest.xml` ve `src/debug/res/xml/debug_network_security_config.xml` yalnız 192.168.0.100, 10.0.2.2 ve loopback için native cleartext izni verir; taban politika kapalıdır. Release manifest/resource değişmedi. LAN IP değişirse debug XML'in de güncellenmesi gerekir; tüm internete HTTP açılmaz. Native Android politika açıklaması: [Android network security configuration](https://developer.android.com/privacy-and-security/security-config); Dart-owned soketlerin ayrı davranışı için [Flutter network policy](https://docs.flutter.dev/release/breaking-changes/network-policy-ios-android).
+
+`.env` çalışma anında dosya olarak okunmaz; `String.fromEnvironment` değerleri `--dart-define-from-file=.env` ile build'e girer. Yerel dosyada yalnız URL `http://192.168.0.100:55321` olarak değiştirildi; anahtar değerleri gösterilmedi/değiştirilmedi. Config yalnız sondaki `/` işaretini kaldırır; LAN adresini 10.0.2.2'ye veya başka bir hosta çevirmez. Auth `/auth/v1`, REST `/rest/v1`, Realtime `/realtime/v1` aynı tabanı kullanır. Hot reload `.env` değişikliğini yüklemez; tam yeniden run gerekir. Kalıcı oturum/PKCE kayıtları endpoint'e göre ayrıdır; eski emülatör oturumu yeni LAN endpoint'ini seçmez. `.env` Git tarafından ignore edilir; anahtarlar uygulama/log/dokümana basılmaz.
+
+### Kalıcı sentetik hesaplar ve giriş
+
+Seed ve yerel DB'de aşağıdaki sekiz hesap aktif doğrulandı. **Hiçbirinin repoda bilinen kullanılabilir parolası yoktur.** Seed yalnız rastgele hash üretir. Daha önce kendiniz parola belirlediyseniz onu kullanın; aksi halde uygulamadaki **Parolamı unuttum → e-posta kodu → kendi yeni parolanız → normal e-posta/parola girişi** yolunu izleyin. Bu hesaplar zaten doğrulanmış seed hesaplarıdır; müşteri kaydı veya davet kabul ekranından yeniden oluşturulmaz. OTP burada parola kurtarma içindir; genel şifresiz giriş ekranı değildir.
+
+| Rol / sefer görevi | Kalıcı e-posta | İlk erişim ve Mailpit beklentisi | Fiziksel Faz 12 kullanımı |
+|---|---|---|---|
+| Owner | owner@peksen.invalid | Kurtarma kodu, ardından belirlediğiniz parola | Hesap/davet, araç/sefer/ekip yönetimi; aktif sefer haritası |
+| Manager | manager@peksen.invalid | Aynı kurtarma akışı | Araç/sefer/primary-assistant ataması; takip sorunu/harita |
+| Warehouse | warehouse@peksen.invalid | Aynı kurtarma akışı | Toplama ve mevcut atamaya yükleme; GPS erişimi kapalı |
+| Accounting | accounting@peksen.invalid | Aynı kurtarma akışı | GPS erişiminin kapalı olması; yalnız atanmış cari/tahsilat yetkileri |
+| Sales | sales@peksen.invalid | Aynı kurtarma akışı | Atanmış aktif müşteri adına sipariş; GPS erişimi kapalı |
+| Driver primary adayı | driver@peksen.invalid | Aynı kurtarma akışı | Manager/Owner bu hesabı primary atadıktan sonra yola çıkış ve GPS paylaşımı |
+| Driver assistant | **Kalıcı seed hesabı yok** | Owner/Manager yeni e-posta için **Driver** daveti oluşturur; o adrese davet kodu gelir; kod + kişinin seçtiği parola ile kabul edilir | Aynı sefere assistant atanır; haritayı okur, konum yayınlayamaz |
+| Customer A | customer.a@peksen.invalid | Kurtarma kodu, ardından belirlediğiniz parola | Kendi açık out_for_delivery siparişinde konum görür |
+| Customer B | customer.b@peksen.invalid | Aynı kurtarma akışı | A'nın konumuna erişememe / müşteri ayrımı |
+
+`tracking-assistant@example.invalid` ve `dispatch9@example.invalid` gibi test dosyası adresleri rollback edilen DB fixture'larıdır; kullanılabilir kalıcı giriş hesabı değildir. Primary/assistant ayrı uygulama rolleri değil, `driver` rolünün sefer atama alanlarıdır. Test çalıştırıcısının geçici parolası yalnız process belleğindedir ve hash'ler geri yüklenir; manuel giriş parolası olarak kullanılamaz. Bu görev parola veya yeni hesap oluşturmadı, OTP talebi göndermedi, seed/migration değiştirmedi.
+
+### Primary Driver ile telefonda ilk giriş
+
+1. Uygulamanın girişinde **Parolamı unuttum** açın; `driver@peksen.invalid` girip kod isteyin.
+2. Açık yerel Mailpit'te alıcısı tam bu adres olan en yeni **Pekşen Gıda parola yenileme kodunuz** iletisini açın. Uygulamada 6 rakamlı kod ve kendi seçtiğiniz yeni parolayı girin. Config'te kod ömrü 3600 saniye; parola en az 8 karakter, en çok 72 UTF-8 bayttır. Kod/parolayı sohbete veya depoya yazmayın.
+3. Kurtarma başarılı olunca uygulama oturumu kapatıp girişe döner. Aynı e-posta ve yeni parolanızla giriş yapın. Diğer seed hesaplarında yalnız e-posta değişir; her biri kendi kurtarma iletisini alır.
+4. Yeni assistant davetinde alıcı yeni kişinin adresi, konu **Pekşen Gıda davet kodunuz** olur; uygulamada **Daveti kabul et** kullanılır. Yeni Customer self-signup farklı akıştır: **Pekşen Gıda kayıt kodunuz**. Mevcut seed Driver için bunları kullanmayın.
+5. Seed seferi tamamlanmıştır; giriş yapmak tek başına GPS başlatmaz. Manager/Owner aktif araçla yeni sefer kurar, bu Driver'ı primary atar ve tamamen toplanmış siparişi bağlar. Warehouse yükler; atanmış Driver **Yola çık** ile out_for_delivery yapar. Sonra **Hesabım → Canlı teslimat konumu → Konum paylaş** kullanılır. Customer A yalnız kendi siparişi bu durumda ve durağı açıkken görür. Gerçek cihaz GPS kabulü bu adımların ardından yapılır.
+
+Çalıştırma: `flutter clean` → `flutter pub get` → `flutter run --dart-define-from-file=.env -d R5CW30NE8ZV`. Anahtarları yeniden üreten/hesapları silen `db reset` bu görevde çalıştırılmaz. Güvenli komut kayıtları `build/phase12-lan-20261012/` altındadır; Gradle'ın encoded dart-defines çıktısı saklanmadan filtrelenir. İstenen clean, önceki ignored build/APK/log dosyalarını temizledi; tarihsel test sonuçları aşağıdaki kayıtlarda korunur.
+
+Son doğrulama: `flutter clean`, `flutter pub get`, `flutter analyze` çıkış 0; `flutter test test/supabase_config_test.dart --reporter expanded` 17/17, çıkış 0. `flutter test integration_test/local_backend_connectivity_test.dart --dart-define-from-file=.env -d R5CW30NE8ZV` fiziksel cihazda **1/1 PASS, çıkış 0**: LAN Auth settings HTTP 200/JSON, gerçek Supabase SDK RPC'si anonim oturum için beklenen 42501 reddi. Böylece anahtarın gateway'de kabulü ve cihaz→LAN→Auth/PostgREST erişimi doğrulandı; hiçbir hesapla giriş yapılmadı/parola değişmedi.
+
+`flutter run --dart-define-from-file=.env -d R5CW30NE8ZV --no-resident` **çıkış 0**: normal uygulama LAN yapılandırmasıyla derlenip telefona kuruldu/açıldı; CLI ayrıldı ve uygulama telefonda kaldı. `git diff --check` çıkış 0. UI görsel kabulü ve primary Driver oturumu bu ağ testinin parçası değildir. Bu çalışma gerçek GPS ekran-kapalı/izin/ağ kesintisi kabulünü kendiliğinden tamamlamaz. Android 17 için [yerel ağ runtime izni](https://docs.flutter.dev/platform-integration/android/local-network-permission) ayrıca ilgili cihazda değerlendirilmelidir; bu API 36 cihazına gereksiz izin eklenmedi.
+
 ## Faz 12 — 12 Ekim 2026 kapanış doğrulaması
 
 Kanıt dizini: ignore edilen `build/phase12-validation-20261011/`. 11 Ekim başarılı kayıtları korunur; 12 Ekim son oturum dinleyicisi ve Realtime hata yedeğinden etkilenen kontroller tekrarlandı. APK'nın varlığı build başarısı yerine kullanılmadı; önceki yarım derlemenin bitiş kodu olmadığından yeniden build alındı.

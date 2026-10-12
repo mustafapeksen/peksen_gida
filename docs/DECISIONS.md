@@ -2,6 +2,8 @@
 
 ## F12-01 — 11 Ekim 2026 onayı; 12 Ekim doğrulama devamı
 
+**12 Ekim LAN düzeltmesi:** Fiziksel yerel kabul için yalnız debug config'te literal RFC1918 HTTP adresleri kabul edilir. Android native HTTP istisnası debug kaynaklarında 192.168.0.100/emülatör/loopback ile sınırlıdır; global HTTP veya release/profile istisnası yoktur. IP değişikliği debug XML'e de uygulanır. `.env` build-time'dır; endpoint değişikliğinde tam run ve endpoint'e ayrılmış yeni oturum gerekir. Bu, üretim bağlantı politikasını veya rol yetkilerini değiştirmez. Seed parolaları bilinmez; kullanıcı mevcut e-posta kodlu kurtarma akışıyla kendi parolasını belirler. Kalıcı assistant ihtiyacı mevcut Driver daveti/sefer ataması ile çözülür, sekizinci rol veya yeni seed eklenmez.
+
 - Faz 12 yalnız arka plan GPS, Realtime ve MapLibre'dır. Konumu yalnız aktif seferin primary Driver'ı gönderir; assistant kendi seferini okur. Assistant'a kaynak devri açık karardır.
 - Hedef ölçüm aralığı 15 saniye; sefer başına yalnız son nokta; rota geçmişi ve kalıcı offline kuyruk yoktur. 60 saniye üzerindeki ölçüm eski olarak gösterilir. Yeniden bağlantıda yalnız yeni ölçüm gönderilir.
 - Customer yalnız kendi açık/tamamlanmamış durağındaki `out_for_delivery` siparişi boyunca görür. Manager/Owner aktif seferleri, Driver kendi seferini görür; Sales/Warehouse/Accounting takip erişimi almaz. Sefer bitince veya paylaşılabilir sipariş kalmayınca son nokta silinir.

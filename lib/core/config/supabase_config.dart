@@ -37,7 +37,6 @@ final class SupabaseConfig {
       throw const SupabaseConfigurationException();
     }
     final uri = Uri.tryParse(endpoint);
-    const localHosts = {'localhost', '127.0.0.1', '::1', '10.0.2.2'};
     if (uri == null ||
         uri.host.isEmpty ||
         uri.userInfo.isNotEmpty ||
@@ -47,7 +46,7 @@ final class SupabaseConfig {
         !(uri.scheme == 'https' ||
             (allowLocalHttp &&
                 uri.scheme == 'http' &&
-                localHosts.contains(uri.host)))) {
+                _isLocalDevelopmentHost(uri.host)))) {
       throw const SupabaseConfigurationException();
     }
     final key = publicKey.isNotEmpty ? publicKey : legacyKey;
@@ -55,6 +54,23 @@ final class SupabaseConfig {
       throw const SupabaseConfigurationException();
     }
     return SupabaseConfig._(endpoint.replaceFirst(RegExp(r'/$'), ''), key);
+  }
+
+  static bool _isLocalDevelopmentHost(String host) {
+    if (const {'localhost', '127.0.0.1', '::1', '10.0.2.2'}.contains(host)) {
+      return true;
+    }
+    // Only literal RFC1918 IPv4 addresses, never arbitrary DNS/public HTTP.
+    final parts = host.split('.');
+    if (parts.length != 4 ||
+        parts.any((p) => !RegExp(r'^(0|[1-9][0-9]{0,2})$').hasMatch(p))) {
+      return false;
+    }
+    final bytes = parts.map(int.parse).toList();
+    if (bytes.any((b) => b > 255)) return false;
+    return bytes[0] == 10 ||
+        (bytes[0] == 172 && bytes[1] >= 16 && bytes[1] <= 31) ||
+        (bytes[0] == 192 && bytes[1] == 168);
   }
 
   static bool _isPublicClientKey(String key) {

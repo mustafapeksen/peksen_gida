@@ -10,6 +10,52 @@ String syntheticJwt(String role) {
 }
 
 void main() {
+  test(
+    'LAN HTTP is debug-only; RFC1918 boundaries exclude public and link-local',
+    () {
+      for (final host in [
+        '192.168.0.100',
+        '10.1.2.3',
+        '172.16.0.1',
+        '172.31.255.254',
+      ]) {
+        final url = 'http://$host:55321/';
+        expect(
+          SupabaseConfig.fromValues(
+            url: url,
+            publishableKey: 'sb_publishable_test',
+            allowLocalHttp: true,
+          )!.url,
+          url.substring(0, url.length - 1),
+        );
+        expect(
+          () => SupabaseConfig.fromValues(
+            url: url,
+            publishableKey: 'sb_publishable_test',
+          ),
+          throwsA(isA<SupabaseConfigurationException>()),
+        );
+      }
+      for (final host in [
+        '172.15.0.1',
+        '172.32.0.1',
+        '192.169.0.1',
+        '169.254.169.254',
+        '8.8.8.8',
+        '192.168.0.256',
+        '192.168.0.100.example.com',
+      ]) {
+        expect(
+          () => SupabaseConfig.fromValues(
+            url: 'http://$host:55321',
+            publishableKey: 'sb_publishable_test',
+            allowLocalHttp: true,
+          ),
+          throwsA(isA<SupabaseConfigurationException>()),
+        );
+      }
+    },
+  );
   test('Boş yapılandırma ağsız önizleme için kapalıdır', () {
     expect(SupabaseConfig.fromValues(url: '  '), isNull);
   });
