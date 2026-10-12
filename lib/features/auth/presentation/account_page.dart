@@ -89,71 +89,75 @@ class _AccountPageState extends ConsumerState<AccountPage>
                           key: const ValueKey('account-role'),
                         ),
                         const SizedBox(height: 12),
-                        const Text(
-                          'Oturum açıldı. İş ekranları sonraki geliştirme fazlarında bağlanacak.',
+                        Text(_roleDescription(value.role)),
+                        const SizedBox(height: 20),
+                        Text(
+                          'İş ekranları',
+                          style: Theme.of(context).textTheme.titleMedium,
                         ),
-                        Wrap(
-                          spacing: 8,
-                          children: [
-                            if (canUseTracking(value.role))
-                              TextButton(
-                                onPressed: () =>
-                                    context.push('/account/tracking'),
-                                child: const Text('Canlı teslimat konumu'),
-                              ),
-                            if (canReadProducts(value.role))
-                              TextButton(
-                                onPressed: () =>
-                                    context.push('/account/products'),
-                                child: const Text('Ürünler ve birimler'),
-                              ),
-                            if (canUseFinance(value.role))
-                              TextButton(
-                                onPressed: () =>
-                                    context.push('/account/finance'),
-                                child: const Text('Tahsilat ve cari'),
-                              ),
-                            if (canUseDispatch(value.role))
-                              TextButton(
-                                onPressed: () =>
-                                    context.push('/account/dispatch'),
-                                child: const Text('Araç ve seferler'),
-                              ),
-                            if (canUseInventory(value.role))
-                              TextButton(
-                                onPressed: () =>
-                                    context.push('/account/inventory'),
-                                child: const Text('Depo ve stok'),
-                              ),
-                            if (value.role == AccountRole.salesOperator)
-                              TextButton(
-                                onPressed: () => context.push('/account/sales'),
-                                child: const Text('Müşteri adına sipariş'),
-                              ),
-                            if (value.role == AccountRole.customer)
-                              TextButton(
-                                onPressed: () => context.push('/account/shop'),
-                                child: const Text('Katalog ve sepet'),
-                              ),
-                            TextButton(
-                              onPressed: () =>
-                                  context.push('/account/password'),
-                              child: const Text('Parola değiştir'),
-                            ),
-                            if (value.role == AccountRole.owner ||
-                                value.role == AccountRole.manager)
-                              TextButton(
-                                onPressed: () =>
-                                    context.push('/account/order-requests'),
-                                child: const Text('Sipariş talepleri'),
-                              ),
-                            if (value.role == AccountRole.owner ||
-                                value.role == AccountRole.manager)
-                              TextButton(
-                                onPressed: () => context.push('/account/admin'),
-                                child: const Text('Hesap yönetimi'),
-                              ),
-                          ],
+                        const SizedBox(height: 8),
+                        if (canUseTracking(value.role))
+                          _AccountAction(
+                            title: 'Canlı teslimat konumu',
+                            icon: Icons.location_on_outlined,
+                            route: '/account/tracking',
+                            description: 'Aktif teslimatı izleyin; primary sürücü konum paylaşabilir.',
+                          ),
+                        if (canUseDispatch(value.role))
+                          _AccountAction(
+                            title: 'Araç ve seferler',
+                            icon: Icons.local_shipping_outlined,
+                            route: '/account/dispatch',
+                            description: 'Sefer, ekip ve durak bilgilerini görüntüleyin.',
+                          ),
+                        if (canReadProducts(value.role))
+                          _AccountAction(
+                            title: 'Ürünler ve birimler',
+                            icon: Icons.inventory_2_outlined,
+                            route: '/account/products',
+                          ),
+                        if (canUseFinance(value.role))
+                          _AccountAction(
+                            title: 'Tahsilat ve cari',
+                            icon: Icons.receipt_long_outlined,
+                            route: '/account/finance',
+                          ),
+                        if (canUseInventory(value.role))
+                          _AccountAction(
+                            title: 'Depo ve stok',
+                            icon: Icons.warehouse_outlined,
+                            route: '/account/inventory',
+                          ),
+                        if (value.role == AccountRole.salesOperator)
+                          _AccountAction(
+                            title: 'Müşteri adına sipariş',
+                            icon: Icons.shopping_bag_outlined,
+                            route: '/account/sales',
+                          ),
+                        if (value.role == AccountRole.customer)
+                          _AccountAction(
+                            title: 'Katalog ve sepet',
+                            icon: Icons.shopping_cart_outlined,
+                            route: '/account/shop',
+                          ),
+                        if (value.role == AccountRole.owner ||
+                            value.role == AccountRole.manager)
+                          _AccountAction(
+                            title: 'Sipariş talepleri',
+                            icon: Icons.assignment_outlined,
+                            route: '/account/order-requests',
+                          ),
+                        if (value.role == AccountRole.owner ||
+                            value.role == AccountRole.manager)
+                          _AccountAction(
+                            title: 'Hesap yönetimi',
+                            icon: Icons.manage_accounts_outlined,
+                            route: '/account/admin',
+                          ),
+                        _AccountAction(
+                          title: 'Parola değiştir',
+                          icon: Icons.lock_outline,
+                          route: '/account/password',
                         ),
                       ],
                     ),
@@ -174,4 +178,43 @@ class _AccountPageState extends ConsumerState<AccountPage>
       ),
     );
   }
+}
+
+String _roleDescription(AccountRole role) => switch (role) {
+  AccountRole.driver => 'Atandığınız seferleri ve durakları takip edin. Aktif primary seferinizde konum paylaşımını siz başlatırsınız.',
+  AccountRole.customer => 'Kataloğa göz atın, sepetinizi hazırlayın ve aktif teslimatınızı takip edin.',
+  AccountRole.salesOperator => 'Yalnız aktif olarak atandığınız müşteriler adına sipariş ve tahsilat işlemlerini yürütün.',
+  AccountRole.warehouse =>
+    'Ürün, stok, toplama ve yükleme işlerinize buradan ulaşın.',
+  AccountRole.accounting => 'Atanmış müşterilerinizin cari bilgilerini ve doğrulanacak tahsilatlarını inceleyin.',
+  AccountRole.manager => 'Ürün, sipariş, depo, tahsilat ve sefer işlerini yetkileriniz kapsamında yönetin.',
+  AccountRole.owner =>
+    'Operasyonları ve hesapları yönetin; aktif teslimatları takip edin.',
+};
+
+class _AccountAction extends StatelessWidget {
+  const _AccountAction({
+    required this.title,
+    required this.icon,
+    required this.route,
+    this.description,
+  });
+  final String title;
+  final String? description;
+  final IconData icon;
+  final String route;
+
+  @override
+  Widget build(BuildContext context) => Card(
+    margin: const EdgeInsets.only(bottom: 8),
+    clipBehavior: Clip.antiAlias,
+    child: ListTile(
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      leading: Icon(icon),
+      title: Text(title),
+      subtitle: description == null ? null : Text(description!),
+      trailing: const Icon(Icons.chevron_right),
+      onTap: () => context.push(route),
+    ),
+  );
 }

@@ -117,6 +117,11 @@ void main() {
               .path,
           '/account',
         );
+        await tester.scrollUntilVisible(
+          find.byKey(const ValueKey('account-sign-out')),
+          250,
+        );
+        await tester.pumpAndSettle();
         await tester.tap(find.byKey(const ValueKey('account-sign-out')));
         await tester.pumpAndSettle();
         expect(find.byKey(const ValueKey('login-submit')), findsOneWidget);
@@ -221,6 +226,9 @@ void main() {
       await submitLogin(tester);
       expect(find.byKey(const ValueKey('account-denied')), findsOneWidget);
       expect(find.byKey(const ValueKey('account-role')), findsNothing);
+      await tester.ensureVisible(
+        find.byKey(const ValueKey('account-sign-out')),
+      );
       await tester.tap(find.byKey(const ValueKey('account-sign-out')));
       await tester.pumpAndSettle();
       expect(find.byKey(const ValueKey('login-submit')), findsOneWidget);
@@ -244,6 +252,8 @@ void main() {
     await pumpAccount(tester, fake);
     await submitLogin(tester);
     fake.denyProfile = true;
+    await tester.scrollUntilVisible(find.text('Hesap erişimini yenile'), 250);
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Hesap erişimini yenile'));
     await tester.pumpAndSettle();
     expect(find.byKey(const ValueKey('account-role')), findsNothing);

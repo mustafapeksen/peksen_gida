@@ -1,5 +1,42 @@
 # Pekşen Gıda doğrulama ve test planı
 
+## 12 Ekim 2026 — Driver UI/GPS devam kabulü
+
+Kanıt dizini: `build/phase12-driver-ui-20261012/` (ignore edilir). Alt bölümdeki önceki fiziksel LAN başarısı korunur; bu tur ağ/config araştırması veya DB reset yapılmadı. Salt okunur yerel DB sorgusu: `driver@peksen.invalid` active=true; tek sefer completed/ended=true/primary=true; açık out_for_delivery durak sayısı 0. **Bu hesap şu anda GPS kabulüne hazır aktif primary sefere sahip değil.** Seed/test fixture incelemesi aynı sonucu destekler.
+
+Yeni altı widget regresyonu: sefersiz Driver açıklaması ve sıfır izin isteği; assistant açıklaması/harita/sıfır izin isteği; Manager'ın assistant diye gösterilmemesi; primary açık aksiyon + izin kabulüyle yeni nokta gönderimi/durdurma; primary izin reddiyle yalnız tracking durum bildirimi; 320×568 hesap kartları, tracking route'u ve geri dönüş. Mevcut Customer haritası, dar primary ekran, offline örnek atma, erişim kaybında temizleme ve preview/auth testleri korundu. Eski hesap testlerinin çıkış/yenileme hedeflerine kaydırma eklendi; yetki/çıkış beklentileri azaltılmadı.
+
+İlk tam deneme 226 başarı/7 hata, çıkış 1: yeni kart düzeninde testlerin görünmeyen hesap düğmelerine dokunması ve StreamSubscription iptalinin tamamlanmadan sınanması. Testler gerçek kaydırma ve async iptal bitişini bekleyecek şekilde düzeltildi; aynı davranış beklentileri son koşuda korundu. Başarısız deneme logu ayrı tutuldu.
+
+### Bu turun nihai sonuçları
+
+| Komut / kontrol | Sonuç | Çıkış |
+|---|---|---:|
+| `flutter analyze` | Son kaynakta temiz; `analyze-final.log` | 0 |
+| `flutter test --reporter expanded` | **233/233** (227 mevcut + 6 yeni); `flutter-test-final.log` | 0 |
+| `flutter test test/tracking_test.dart test/account_access_test.dart --reporter expanded` | **37/37**; `focused-test.log` | 0 |
+| `flutter test integration_test/tracking_smoke_test.dart -d emulator-5554` | **3/3**, debug assemble/kurulum başarılı; `android-integration.log` | 0 |
+| `git diff --check` | Temiz | 0 |
+| `flutter run --dart-define-from-file=.env -d R5CW30NE8ZV --no-resident` | Telefon yeniden bağlandı; normal uygulama debug derleme/kurulum/açılışı başarılı, Driver oturumu korundu; `physical-run.log` | 0 |
+| Fiziksel UI kontrolü | Hesap kartları → tracking boş durum → Araç ve seferler → sistem geri; görüntüler incelendi, görülen ekranlarda taşma yok | Gözlendi |
+| Gerçek GPS izni / ilk nokta | Aktif primary sefer yok; yapılmadı | — |
+
+Android testleri sentetik repository/konum kaynağı kullanır: hesap→tracking, sefersiz durum/geri, primary açık eylem/izin reddi ve native MapLibre widget açılışı doğrulandı. Gerçek Android izin diyaloğu, bildirimli GPS servisi, ilk gerçek nokta veya görsel piksel kabulü değildir. Bağımsız `flutter build apk --debug`, DB reset/DB paketleri bu UI turunda tekrarlanmadı; integration komutunun debug build'i başarılıdır. SQL/RLS/seed/servis ve bağımlılıklar değişmedi.
+
+İlk iki taramada telefon görünmedi; kullanıcı yeniden bağladıktan sonra mevcut LAN ayarıyla normal uygulama kuruldu. `physical-run.log` encoded dart-defines/anahtar satırları yazılmadan filtrelendi. Fiziksel görüntü kanıtları aynı ignored klasörde `physical-account.png`, `physical-tracking.png`, `physical-dispatch.png`, `physical-back.png`: Sentetik Şoför oturumu, yeni kartlar, primary sefer yok mesajı, tamamlanmış TEST-ARAC-01 ve sistem geri dönüşü incelendi. Bu kontrol gerçek backend verisiyle yapıldı; fiziksel telefonda sentetik integration kurulmadı, oturum/veri temizlenmedi. Sonuç yalnız gözlenen ekranları kapsar; aktif primary/assistant ekranı, gerçek GPS izni/ölçümü ve ekran kapalı takip fiziksel olarak doğrulanmadı. Sıradaki iş aşağıdaki kabul seferi hazırlığıdır.
+
+### Yerel fiziksel kabul seferini mevcut ekranlardan hazırlama
+
+1. Telefonda Driver girişi zaten yapılmışsa parola kurtarmayı tekrarlamayın. Hazırlık için başka oturum/cihazda Manager/Owner kullanın; gerekirse mevcut **Parolamı unuttum** yoluyla kendi yerel parolanızı belirleyin. Bilinen seed parolası yoktur.
+2. Warehouse (veya mevcut yetkili Manager/Owner) **Depo ve stok** ekranında seed'in `35000000-0000-4000-8000-000000000001` picking siparişini kontrol eder. Değiştirilmemiş seed'de Sentetik Ürün A için 4 adet istenmiş, 1 toplanmıştır; **Kalem topla** ile yalnız kalan 3 adet toplanır. Canlı değerler farklıysa ekranda kalan miktarı esas alın. Alternatif olarak Customer/Sales mevcut akıştan stoklu yeni sipariş oluşturur, depo tamamen toplar. İş kuralları atlanmaz.
+3. Manager/Owner **Araç ve seferler → Sefer oluştur**: aktif ve açık sefere bağlı olmayan araç seçer (`TEST-ARAC-01` uygunsa kullanılabilir), primary olarak **Sentetik Şoför / driver@peksen.invalid** seçer. Assistant opsiyoneldir; kalıcı seed assistant hesabı yoktur. Gerekirse mevcut Driver daveti kullanılır. **Tamamen toplanmış siparişler → Ata** ile picked sipariş yeni sefere bağlanır.
+4. Warehouse/Manager/Owner **Depo ve stok → Yüklemeyi tamamla** kullanır. Driver **Araç ve seferler → Yola çık** der; bütün açık siparişler loaded olmalıdır. Mevcut servis atomik olarak seferi in_progress, siparişleri out_for_delivery yapar. DB'de elle status değiştirmeyin.
+5. Telefonda **Hesabım → Canlı teslimat konumu → Yenile → Konum paylaşımını başlat**. İzin talebi kullanıcı eylemiyle başlar; sefer uygun değilse başlamaz. Android daha önce verilmiş izinleri yeniden sormayabilir. Reddedilmiş/sürekli reddedilmiş durumda takip sorunu mesajını ve Android uygulama izinlerini kontrol edin. İzin/bildirim açıkken ilk yeni GPS ölçümü, sunucu son noktası ve başka yetkili Customer/Manager ekranındaki güncellemeyi kontrol edin.
+6. Ekran kapalı takip, GPS kapatma/izin kaldırma, ağ kesip geri getirme (eski nokta tekrar yollanmaz), assistant yalnız okuma, başka müşterinin reddi ve paylaşım sonunda durma/silme gerçek cihazda ayrı kabul edilir. Teslimat bitiş servisi bu görevde açılmaz; bitiş için önceki kontrollü yerel kabul yöntemi korunur.
+
+Native izin servisi değiştirilmedi. İzin reddinde yalnız `tracking_control`/tracking durum çağrıları vardır; sipariş/sefer/ödeme/stok geçişi yapılmaz. Gerçek Android izin diyaloğu, GPS ölçümü ve görsel piksel incelemesi sentetik widget/integration başarısından çıkarılamaz. Üretim harita sağlayıcısı/lisansı ve assistant GPS devri açık; Faz 12 bütünü tamamlandı sayılmaz.
+
+
 ## 12 Ekim 2026 — Fiziksel Android LAN ve rol hesabı hazırlığı
 
 Başlangıç temiz `7390a7d`. Fiziksel cihaz `R5CW30NE8ZV` (Samsung SM-S918B, API 36); emülatör ayrı hedeftir. **Kesin neden:** `SupabaseConfig` HTTP allowlist'i yalnız localhost/loopback/10.0.2.2 içeriyordu; `192.168.0.100` SDK başlangıcından önce reddediliyordu. Giriş ekranının hazır olması gerçek ağ isteği başarısı anlamına gelmez. Android main/debug manifestlerinde `usesCleartextTraffic` veya network security config yoktu; Android tarafında 10.0.2.2'ye özel izin bulunmuyordu.
@@ -32,7 +69,7 @@ Seed ve yerel DB'de aşağıdaki sekiz hesap aktif doğrulandı. **Hiçbirinin r
 2. Açık yerel Mailpit'te alıcısı tam bu adres olan en yeni **Pekşen Gıda parola yenileme kodunuz** iletisini açın. Uygulamada 6 rakamlı kod ve kendi seçtiğiniz yeni parolayı girin. Config'te kod ömrü 3600 saniye; parola en az 8 karakter, en çok 72 UTF-8 bayttır. Kod/parolayı sohbete veya depoya yazmayın.
 3. Kurtarma başarılı olunca uygulama oturumu kapatıp girişe döner. Aynı e-posta ve yeni parolanızla giriş yapın. Diğer seed hesaplarında yalnız e-posta değişir; her biri kendi kurtarma iletisini alır.
 4. Yeni assistant davetinde alıcı yeni kişinin adresi, konu **Pekşen Gıda davet kodunuz** olur; uygulamada **Daveti kabul et** kullanılır. Yeni Customer self-signup farklı akıştır: **Pekşen Gıda kayıt kodunuz**. Mevcut seed Driver için bunları kullanmayın.
-5. Seed seferi tamamlanmıştır; giriş yapmak tek başına GPS başlatmaz. Manager/Owner aktif araçla yeni sefer kurar, bu Driver'ı primary atar ve tamamen toplanmış siparişi bağlar. Warehouse yükler; atanmış Driver **Yola çık** ile out_for_delivery yapar. Sonra **Hesabım → Canlı teslimat konumu → Konum paylaş** kullanılır. Customer A yalnız kendi siparişi bu durumda ve durağı açıkken görür. Gerçek cihaz GPS kabulü bu adımların ardından yapılır.
+5. Seed seferi tamamlanmıştır; giriş yapmak tek başına GPS başlatmaz. Manager/Owner aktif araçla yeni sefer kurar, bu Driver'ı primary atar ve tamamen toplanmış siparişi bağlar. Warehouse yükler; atanmış Driver **Yola çık** ile out_for_delivery yapar. Sonra **Hesabım → Canlı teslimat konumu → Konum paylaşımını başlat** kullanılır. Customer A yalnız kendi siparişi bu durumda ve durağı açıkken görür. Gerçek cihaz GPS kabulü bu adımların ardından yapılır.
 
 Çalıştırma: `flutter clean` → `flutter pub get` → `flutter run --dart-define-from-file=.env -d R5CW30NE8ZV`. Anahtarları yeniden üreten/hesapları silen `db reset` bu görevde çalıştırılmaz. Güvenli komut kayıtları `build/phase12-lan-20261012/` altındadır; Gradle'ın encoded dart-defines çıktısı saklanmadan filtrelenir. İstenen clean, önceki ignored build/APK/log dosyalarını temizledi; tarihsel test sonuçları aşağıdaki kayıtlarda korunur.
 

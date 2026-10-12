@@ -81,13 +81,15 @@ Future<void> mountTracking(
   TrackingFake fake, {
   AccountRole role = AccountRole.customer,
   bool nativeMap = false,
+  LocationFake? source,
+  String initialLocation = '/account/tracking',
 }) async {
   final router = createAppRouter(
     previewEnabled: true,
-    initialLocation: '/account/tracking',
+    initialLocation: initialLocation,
     isSignedIn: () => true,
   );
-  final location = LocationFake();
+  final location = source ?? LocationFake();
   final publisher = TrackingPublisher(fake, location);
   final container = ProviderContainer(
     overrides: [
@@ -208,7 +210,158 @@ void main() {
       await mountTracking(tester, TrackingFake());
       await tester.pumpAndSettle();
       expect(find.text('map:41.0,29.0'), findsOneWidget);
-      expect(find.text('Konum paylaş'), findsNothing);
+      expect(find.text('Konum paylaşımını başlat'), findsNothing);
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(find.text('Hesabım'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'driver without active run explains assignment without permission request',
+    (tester) async {
+      final fake = TrackingFake()..rows = [];
+      final source = LocationFake();
+      await mountTracking(
+        tester,
+        fake,
+        role: AccountRole.driver,
+        source: source,
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.text(
+          'Aktif primary seferiniz yok. Konum paylaşımı için Manager/Owner tarafından primary sürücü olarak atanmanız gerekir.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('Araç ve seferler'), findsOneWidget);
+      expect(find.text('Konum paylaşımını başlat'), findsNothing);
+      expect(source.starts, 0);
+      expect(fake.actions, isEmpty);
+    },
+  );
+  testWidgets(
+    'assistant reads map with explanation and cannot start permission flow',
+    (tester) async {
+      final source = LocationFake();
+      final fake = TrackingFake();
+      await mountTracking(
+        tester,
+        fake,
+        role: AccountRole.driver,
+        source: source,
+      );
+      await tester.pumpAndSettle();
+      expect(
+        find.text(
+          'Assistant sürücü haritayı görüntüleyebilir; konum paylaşımı bu fazda primary sürücüye aittir.',
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('map:41.0,29.0'), findsOneWidget);
+      expect(find.text('Konum paylaşımını başlat'), findsNothing);
+      expect(source.starts, 0);
+      expect(fake.actions, isEmpty);
+    },
+  );
+  testWidgets('manager is not described as assistant', (tester) async {
+    await mountTracking(tester, TrackingFake(), role: AccountRole.manager);
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Assistant sürücü'), findsNothing);
+    expect(find.text('Konum paylaşımını başlat'), findsNothing);
+  });
+  for (final permitted in [true, false]) {
+    testWidgets(
+      'primary explicitly starts permission flow; permitted=$permitted',
+      (tester) async {
+        final fake = TrackingFake();
+        fake.rows.single['can_publish'] = true;
+        fake.rows.single['status'] = 'off';
+        final source = LocationFake()..permitted = permitted;
+        await mountTracking(
+          tester,
+          fake,
+          role: AccountRole.driver,
+          source: source,
+        );
+        await tester.pumpAndSettle();
+        expect(source.starts, 0);
+        expect(fake.actions, isEmpty);
+        await tester.ensureVisible(find.text('Konum paylaşımını başlat'));
+        await tester.tap(find.text('Konum paylaşımını başlat'));
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 20)),
+        );
+        await tester.pumpAndSettle();
+        expect(source.starts, 1);
+        expect(fake.actions, ['start']);
+        if (permitted) {
+          expect(find.textContaining('Konum paylaşımı açık.'), findsOneWidget);
+          source.controller.add({
+            'tracking_status': 'live',
+            'latitude': 41,
+            'longitude': 29,
+          });
+          await tester.pumpAndSettle();
+          expect(fake.sent.single['latitude'], 41);
+          expect(find.text('Konum güncellendi.'), findsOneWidget);
+          await tester.ensureVisible(find.text('Paylaşımı durdur'));
+          await tester.tap(find.text('Paylaşımı durdur'));
+          await tester.runAsync(
+            () => Future<void>.delayed(const Duration(milliseconds: 20)),
+          );
+          await tester.pumpAndSettle();
+          expect(fake.actions, ['start', 'stop']);
+        } else {
+          expect(
+            find.textContaining(
+              'Takip sorunu: konum veya bildirim izni verilmedi.',
+            ),
+            findsOneWidget,
+          );
+          expect(fake.sent, [
+            {'tracking_status': 'permission_denied'},
+          ]);
+          expect(source.stops, greaterThan(0));
+          // Only the tracking control/status API is called; no order/run transition.
+          expect(fake.actions, ['start']);
+        }
+      },
+    );
+  }
+  testWidgets(
+    'narrow driver account has touchable tracking/dispatch cards and real route',
+    (tester) async {
+      tester.view.physicalSize = const Size(320, 568);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await mountTracking(
+        tester,
+        TrackingFake()..rows = [],
+        role: AccountRole.driver,
+        initialLocation: '/account',
+      );
+      await tester.pumpAndSettle();
+      expect(find.textContaining('İş ekranları sonraki'), findsNothing);
+      for (final title in ['Canlı teslimat konumu', 'Araç ve seferler']) {
+        final tile = find.ancestor(
+          of: find.text(title),
+          matching: find.byType(ListTile),
+        );
+        expect(tile, findsOneWidget);
+        expect(tester.getSize(tile).height, greaterThanOrEqualTo(48));
+        expect(tester.widget<ListTile>(tile).onTap, isNotNull);
+      }
+      await tester.ensureVisible(find.text('Canlı teslimat konumu'));
+      await tester.tap(find.text('Canlı teslimat konumu'));
+      await tester.pumpAndSettle();
+      expect(
+        find.textContaining('Aktif primary seferiniz yok.'),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
       await tester.binding.handlePopRoute();
       await tester.pumpAndSettle();
       expect(find.text('Hesabım'), findsOneWidget);
@@ -257,7 +410,7 @@ void main() {
     fake.rows.single['can_publish'] = true;
     await mountTracking(tester, fake, role: AccountRole.driver);
     await tester.pumpAndSettle();
-    await tester.ensureVisible(find.text('Konum paylaş'));
+    await tester.ensureVisible(find.text('Konum paylaşımını başlat'));
     await tester.pumpAndSettle();
     expect(tester.takeException(), isNull);
   });

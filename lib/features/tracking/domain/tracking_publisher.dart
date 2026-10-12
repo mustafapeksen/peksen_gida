@@ -49,7 +49,9 @@ class TrackingPublisher extends ChangeNotifier {
       if (!await source.start()) {
         await _send({'tracking_status': 'permission_denied'});
         await stop(clearRemote: false);
-        _notify('Konum veya bildirim izni verilmedi. Sipariş değişmedi.');
+        _notify(
+          'Takip sorunu: konum veya bildirim izni verilmedi. Sipariş ve sefer değişmedi. Android uygulama izinlerini kontrol edip yeniden deneyin.',
+        );
         return;
       }
       if (generation != _generation || _disposed) {

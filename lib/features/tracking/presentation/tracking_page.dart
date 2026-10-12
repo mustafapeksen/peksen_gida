@@ -2,6 +2,10 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
+
+import '../../auth/domain/account_repository.dart';
+import '../../auth/presentation/auth_providers.dart';
 
 import '../../products/presentation/price_page.dart' show newOperationKey;
 import 'tracking_map.dart';
@@ -58,6 +62,9 @@ class _TrackingPageState extends ConsumerState<TrackingPage> {
       (_, _) => ref.invalidate(trackingDataProvider),
     );
     final data = ref.watch(trackingDataProvider);
+    final isDriver =
+        ref.watch(accountProfileProvider).asData?.value?.role ==
+        AccountRole.driver;
     final publisher = ref.watch(trackingPublisherProvider).asData?.value;
     return Scaffold(
       appBar: AppBar(title: const Text('Canlı teslimat konumu')),
@@ -69,14 +76,6 @@ class _TrackingPageState extends ConsumerState<TrackingPage> {
               'Yalnız aktif teslimatın son konumu gösterilir. Rota geçmişi tutulmaz.',
             ),
             const SizedBox(height: 8),
-            if (publisher != null)
-              ListenableBuilder(
-                listenable: publisher,
-                builder: (_, _) => Text(
-                  publisher.message,
-                  key: const ValueKey('tracking-status'),
-                ),
-              ),
             if (error != null) Text(error!),
             TextButton(
               onPressed: () => ref.invalidate(trackingDataProvider),
@@ -90,7 +89,39 @@ class _TrackingPageState extends ConsumerState<TrackingPage> {
                 'Konum alınamadı. Önceki konum gizlendi; bağlantı ve erişimi kontrol edin.',
               ),
               data: (rows) => rows.isEmpty
-                  ? const Text('Takip edilebilir aktif teslimat yok.')
+                  ? isDriver
+                        ? Card(
+                            child: Padding(
+                              padding: const EdgeInsets.all(16),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  const Icon(
+                                    Icons.local_shipping_outlined,
+                                    size: 40,
+                                  ),
+                                  const SizedBox(height: 12),
+                                  const Text(
+                                    'Aktif primary seferiniz yok. Konum paylaşımı için Manager/Owner tarafından primary sürücü olarak atanmanız gerekir.',
+                                  ),
+                                  const SizedBox(height: 12),
+                                  const Text(
+                                    'Atamanız varsa seferin yola çıkmış ve açık siparişin dağıtımda olması gerekir. Hazırlık aşamasında GPS izni istenmez.',
+                                  ),
+                                  const SizedBox(height: 16),
+                                  FilledButton.icon(
+                                    onPressed: () =>
+                                        context.push('/account/dispatch'),
+                                    icon: const Icon(
+                                      Icons.local_shipping_outlined,
+                                    ),
+                                    label: const Text('Araç ve seferler'),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          )
+                        : const Text('Takip edilebilir aktif teslimat yok.')
                   : Column(
                       children: rows.map((row) {
                         final lat = row['latitude'] as num?;
@@ -110,6 +141,13 @@ class _TrackingPageState extends ConsumerState<TrackingPage> {
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
                                 Text('Araç: ${row['plate']}'),
+                                if (isDriver && row['can_publish'] != true) ...[
+                                  const SizedBox(height: 8),
+                                  const Text(
+                                    'Assistant sürücü haritayı görüntüleyebilir; konum paylaşımı bu fazda primary sürücüye aittir.',
+                                  ),
+                                  const SizedBox(height: 8),
+                                ],
                                 Text(switch (row['status']) {
                                   'live' =>
                                     stale
@@ -122,18 +160,23 @@ class _TrackingPageState extends ConsumerState<TrackingPage> {
                                 }),
                                 if (sampled != null)
                                   Text('Son ölçüm: ${sampled.toLocal()}'),
-                                if (lat != null && lon != null) ...[
-                                  const Text('Haritadaki yeşil işaret: araç'),
-                                  SizedBox(
-                                    height: 260,
-                                    child: ref.watch(
-                                      trackingMapBuilderProvider,
-                                    )(lat.toDouble(), lon.toDouble()),
-                                  ),
-                                ],
                                 if (row['can_publish'] == true) ...[
+                                  if (publisher != null)
+                                    ListenableBuilder(
+                                      listenable: publisher,
+                                      builder: (_, _) => Semantics(
+                                        liveRegion: true,
+                                        child: Text(
+                                          publisher.message,
+                                          key: const ValueKey(
+                                            'tracking-status',
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+
                                   const Text(
-                                    'Paylaşımı açık ekrandan başlatın. Bildirim açık kalır; uygulamayı kapatırsanız yeniden başlatmanız gerekir.',
+                                    'Primary sürücü olarak atanmışsınız. Başlat düğmesine dokunduğunuzda gerekli Android konum ve bildirim izinleri istenir. Bildirim açık kalır; uygulamayı kapatırsanız yeniden başlatmanız gerekir.',
                                   ),
                                   Wrap(
                                     spacing: 8,
@@ -145,7 +188,9 @@ class _TrackingPageState extends ConsumerState<TrackingPage> {
                                                 row['id'] as String,
                                                 true,
                                               ),
-                                        child: const Text('Konum paylaş'),
+                                        child: const Text(
+                                          'Konum paylaşımını başlat',
+                                        ),
                                       ),
                                       TextButton(
                                         onPressed: busy
@@ -157,6 +202,15 @@ class _TrackingPageState extends ConsumerState<TrackingPage> {
                                         child: const Text('Paylaşımı durdur'),
                                       ),
                                     ],
+                                  ),
+                                ],
+                                if (lat != null && lon != null) ...[
+                                  const Text('Haritadaki yeşil işaret: araç'),
+                                  SizedBox(
+                                    height: 260,
+                                    child: ref.watch(
+                                      trackingMapBuilderProvider,
+                                    )(lat.toDouble(), lon.toDouble()),
                                   ),
                                 ],
                               ],
