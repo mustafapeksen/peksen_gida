@@ -1,5 +1,45 @@
 # Pekşen Gıda doğrulama ve test planı
 
+## 12 Ekim 2026 — Gerçek cihaz GPS: hazırlık ve ölçülmüş kabul
+
+Hedef **R5CW30NE8ZV / SM-S918B / Android 16 API 36**, mevcut LAN config ve Driver oturumu. Kaynak `e105205`. Kanıt klasörü `build/phase12-physical-gps-20261012/`; önceki görüntüler korunur. Aşağıdaki fiziksel gözlemler emülatör/mock başarısından çıkarılmadı. Gerçek koordinatlar dokümana/komut çıktısına yazılmadı; yalnız varlık, durum ve zaman izlendi.
+
+### Hazırlık ve komutlar
+
+`python supabase/tests/manual/prepare_tracking_acceptance.py` **çıkış 0**, `prepare-final.log`. Sabit `supabase_db_peksen_gida_phase3_local` Docker container'ı ve yerel psql kullanır; parola/anahtar okumaz. Seed Driver/Manager/Warehouse kimliklerini ve Customer A siparişini doğrular. Warehouse authenticated RPC ile kalan 3 adedi toplar; Manager `dispatch_action(create_run/assign)`; Warehouse `warehouse_order_action(load)`. Tek transaction, doğrudan business tablo yazması yok. Kullanıcı izinli yerel fixture'dır; Manager/Owner şifresiyle giriş yapılmış gibi raporlanmaz. Auth/oturum verisine dokunulmaz. İlk hazırlık denemesi, Warehouse ham order_items RLS okuması kapalı olduğu için pick hedefini göremedi ve assign reddiyle tamamen rollback/1 oldu (`prepare.log`); fixture kimlik çözümlemesi rol değişiminden önceye alındı, aynı korumalı RPC'lerle son koşu geçti. Uygulamanın RLS sınırı genişletilmedi.
+
+Hazırlanan sefer `10101b3d-906f-42af-a957-ae0c63d60ada`; primary driver@peksen.invalid, TEST-ARAC-01. Sipariş `35000000-0000-4000-8000-000000000001`, Customer A, picked 4/4 ve loaded. Telefonda **Araç ve seferler → Yola çık → Kaydet** sonrası backend **in_progress / out_for_delivery** oldu. Hazırlık devam turunda tekrar çalıştırılmadı; önceki completed sefer korunur.
+
+Canlı nokta yazılırken aşağıdaki yerel kontrol **4/4 PASS, çıkış 0** verdi (`access-check.log`):
+
+```powershell
+Get-Content -Raw supabase/tests/manual/check_tracking_acceptance.sql |
+  docker exec -i supabase_db_peksen_gida_phase3_local psql -X -q -U postgres -d postgres
+```
+
+Kontrol gerçek noktayı okur ama koordinatı basmaz. SQL `authenticated` rolü ve sentetik Manager/Customer claim'leriyle yürür; bütün sorgular rollback edilir. Manager güncel live nokta okur, yayınlayamaz; Customer A kendi aktif teslimatını okur/yayınlayamaz; Customer B A'nın noktasını göremez (boş); Warehouse takip RPC'si 42501. Bu, yeni Manager/Customer SDK login veya iki ayrı telefonda görsel kabul değildir. Artık paylaşım durdurulmuş olduğundan bu scripti yeniden çalıştırmak için Driver'ın paylaşımı açıkça yeniden başlatması ve yeni live nokta gelmesi gerekir.
+
+### Fiziksel kanıtlar
+
+| Kabul | Gözlem / kanıt |
+|---|---|
+| Sefer ve yola çıkış | `02-loaded.png`, `04-dialog.png`, `05-ready.png`; loaded sipariş, Driver onayı, primary başlat düğmesi |
+| Android konum izni | `06-permission.png`, `09-retry-permission.png`: gerçek sistem diyaloğu; ikinci istekte **Uygulamayı kullanırken / Tam** verildi |
+| Bildirim izni | `07-resume.png`: gerçek sistem diyaloğu; izin verildi. `permissions.log`: fine/coarse/notification granted=true |
+| Konum reddi | `08-denied.png`: takip sorunu, sipariş/sefer değişmedi mesajı; backend permission_denied/konumsuz, sipariş out_for_delivery/sefer in_progress korundu |
+| Foreground servis / ilk nokta | `foreground.log`: LocationTrackingService, isForeground=true, notification id1201/channel delivery_location. İlk gözlenen sample UTC **17:42:26.876**, received **17:42:26.429211**, status live/has_point=true; cihaz/PC saatinde yaklaşık yarım saniye fark var |
+| Kısa ekran kapalı | `screen-off.log`: mWakefulness=Dozing; örnek zamanı **17:43:06.973 → 17:43:47.042 UTC**, servis foreground kaldı. 40 saniyelik kısa kontrol; uzun süreli Doze/pil/saha kabulü değildir |
+| LAN kesintisi | `network-cut.log`: Wi-Fi kapalı **17:44:33.043–17:44:58.262 UTC**. Nokta **17:44:27.290** olarak sabit kaldı. Yeniden bağlantıda ilk gözlenen yazı örneği **17:45:07.495**, alım **17:45:07.187**; örnek yeniden bağlantıdan sonra. Wi-Fi tekrar açık (wifi_on=1). Bu kısa koşuda offline örneğin tekrar gönderildiği görülmedi; uzun kesinti/60 saniye timeout ayrı kabul |
+| Fiziksel canlı ekran | `11-resumed.png`: güncel konum/son ölçüm/araç marker'ı. Demo harita zemini tek renk; sokak katmanı veya üretim stil kabulü yapılmadı |
+| Kullanıcı durdurma | `13-stopped-final.png`, `stopped-final.log`: native tracking yok, status stopped, latitude/sample/receive NULL; nokta temizlendi, durum satırı kalır. Önceki `12-stopped.png`/`stopped.log` canlı kontrol ara kaydıdır; başarı kanıtı değildir |
+
+Ekran görüntüleri ignored yerel kanıttır; depoya eklenmedi. Bildirim foreground durumu Android servis dökümüyle doğrulandı; diğer uygulamaların bildirimlerini görüntülemek için bildirim perdesi açılmadı. Test sonunda paylaşım **kapalı**, Wi-Fi **açık**, Driver oturumu ve in_progress/out_for_delivery test seferi **korundu**. Başlat düğmesiyle yeniden kabul sürdürülebilir; hazırlığı/DB reset'i tekrarlamak gerekmez.
+
+Bu tur uygulama/Android/migration/seed kodu değişmedi; önceki analyze/233 Flutter testi/3 Android integration ve build tekrarlanmadı. `git diff --check` **0**. Hazırlık ve erişim kontrolü dışında yeni otomatik test/build başarı iddiası yok.
+
+**Faz 12 henüz tamamen tamamlanmadı.** Temel fiziksel izin, konum, kısa ekran kapalı ve kısa ağ kesintisi kontrolleri geçti. Uzun süreli arka plan/pil optimizasyonu, GPS kapatma/sonradan izin kaldırma, logout/task kapanması ve son teslimat/sefer bittiğinde otomatik durma/silme fiziksel uçtan uca bekliyor. Teslimat kesinleştirme bu tur açılmadı. Assistant fiziksel cihaz okuması/kaynak devri ve üretim harita sağlayıcısı/lisansı açık kalır. Faz 13, secret, commit/push yok.
+
+
 ## 12 Ekim 2026 — Driver UI/GPS devam kabulü
 
 Kanıt dizini: `build/phase12-driver-ui-20261012/` (ignore edilir). Alt bölümdeki önceki fiziksel LAN başarısı korunur; bu tur ağ/config araştırması veya DB reset yapılmadı. Salt okunur yerel DB sorgusu: `driver@peksen.invalid` active=true; tek sefer completed/ended=true/primary=true; açık out_for_delivery durak sayısı 0. **Bu hesap şu anda GPS kabulüne hazır aktif primary sefere sahip değil.** Seed/test fixture incelemesi aynı sonucu destekler.

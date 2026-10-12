@@ -1,5 +1,18 @@
 # Pekşen Gıda ilerleme kaydı
 
+## 12 Ekim 2026 — Fiziksel GPS temel kabulü geçti; kalan Faz 12 kabulü açık
+
+Başlangıç temiz `e105205` (Driver UI/LAN düzeltmeleri commit edilmiş). Bu görevde uygulama, Android servis, migration/seed veya iş kuralları değiştirilmedi. Mevcut Driver oturumu korundu; reset, parola değişikliği, secret, commit/push yok. Önceki bölümdeki “aktif sefer yok” bilgisi bu hazırlık öncesinin tarihçesidir.
+
+**Yerel hazırlık:** Kullanıcının onayladığı local fixture seçeneğiyle `supabase/tests/manual/prepare_tracking_acceptance.py` eklendi. Yalnız sabit yerel Docker DB'ye bağlanır; seed kimliklerini doğrular, authenticated Warehouse/Manager bağlamında mevcut RPC'leri çağırır. Customer A'nın `35000000-0000-4000-8000-000000000001` siparişindeki kalan 3 adet toplandı (4/4), Manager sefer oluşturup siparişi atadı, Warehouse RPC'si yükledi. Sefer `10101b3d-906f-42af-a957-ae0c63d60ada`, araç TEST-ARAC-01, primary `driver@peksen.invalid`. Hazırlık planned/loaded bıraktı; **Yola çık → Kaydet fiziksel Driver oturumundan** yapılarak in_progress/out_for_delivery doğrulandı. Hazırlık hesapla gerçek giriş testi değildir; SQL role/claim bağlamı kullanan yerel fixture'dır. Doğrudan status/stok UPDATE yapılmadı.
+
+**Fiziksel SM-S918B / R5CW30NE8ZV:** Başlat düğmesi ve gerçek Android konum/bildirim izin diyalogları görüldü. Konum reddinde takip sorunu bildirildi, sipariş/sefer değişmedi. Sonraki açık başlatmada konum ve bildirim izinleri verildi; native servis foreground=true/id1201; gerçek cihaz noktası backend'e live olarak yazıldı. Manager ve Customer A aynı noktayı okuyabildi; Customer B boş liste, Warehouse 42501 aldı (authenticated DB/RPC kontrolü; ayrı cihazlarda Manager/Customer UI kabulü yapılmadı). Kısa ekran kapalı 40 saniye boyunca yeni ölçümler geldi. 25 saniye Wi-Fi/LAN kesintisinde backend noktası değişmedi; yeniden bağlantının ardından ilk gözlenen yazı yeni ölçüm taşıdı. Wi-Fi geri açıldı. Fiziksel ekranda güncel zaman ve araç marker'ı görüldü.
+
+**Son durum:** Telefonda **Paylaşımı durdur** çalıştırıldı; native servis yok, backend status=stopped, koordinat ve ölçüm zamanları NULL. Aktif test seferi/sipariş korunuyor; Driver gerekirse tekrar başlatabilir. Harita demo zemini tek renk göründü; sokak/üretim harita görsel kabulü yapılmış sayılmaz. Ekran görüntüleri ve koordinatsız zaman/servis logları `build/phase12-physical-gps-20261012/` içinde (ignore); ayrıntı TESTING başında.
+
+Hazırlık son koşusu çıkış 0, canlı noktayla dört rol kontrolü 4/4 çıkış 0, diff check 0. Önceki 233 Flutter/3 integration/analyze/build başarıları gereksiz yere tekrarlanmadı; bu tur yeni uygulama build'i yok. **Faz 12 bütünü tamamlanmadı:** uzun süreli ekran kapalı/pil optimizasyonu, GPS sonradan kapatma/izin kaldırma, logout/task kapanması ve teslimat/sefer bitiminde uçtan uca otomatik durma/silme; üretim stil sağlayıcısı/lisansı ve assistant kaynak devri açık. Faz 13'e geçilmedi.
+
+
 ## 12 Ekim 2026 — Driver hesap/takip ekranı ve GPS önkoşulları
 
 Başlangıç `cc6e866`, çalışma ağacı temiz (`main`, ahead 2). LAN config/native debug HTTP düzeltmesi korundu; `.env`, Android izin/servis kodu, migration, seed ve iş transaction'ları değiştirilmedi. Salt okunur canlı yerel DB sorgusunda `driver@peksen.invalid` aktif; tek primary seferi `completed`, `ended_at` dolu ve paylaşılabilir sipariş sayısı **0**. Aktif primary/assistant ataması yok. Seed de yalnız tamamlanmış sefer içeriyor. Hesap/parola/sefer verisi değiştirilmedi, reset yapılmadı.
