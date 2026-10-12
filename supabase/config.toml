@@ -46,7 +46,7 @@ subject = "Pekşen Gıda parola yenileme kodunuz"
 content_path = "./supabase/templates/code.html"
 
 [realtime]
-enabled = false
+enabled = true
 
 [studio]
 enabled = false

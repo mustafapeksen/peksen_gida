@@ -1,5 +1,31 @@
 # Pekşen Gıda doğrulama ve test planı
 
+## Faz 12 — 12 Ekim 2026 kapanış doğrulaması
+
+Kanıt dizini: ignore edilen `build/phase12-validation-20261011/`. 11 Ekim başarılı kayıtları korunur; 12 Ekim son oturum dinleyicisi ve Realtime hata yedeğinden etkilenen kontroller tekrarlandı. APK'nın varlığı build başarısı yerine kullanılmadı; önceki yarım derlemenin bitiş kodu olmadığından yeniden build alındı.
+
+| Komut | Sonuç | Çıkış |
+|---|---|---|
+| `flutter pub get` | 11 Ekim, MapLibre ve transitif bağımlılıklar çözüldü; sonrasında bağımlılık değişmedi | 0 |
+| `flutter analyze` | Temiz | 0 |
+| `flutter test --reporter expanded` | 226/226 (önceki 205 + yeni 21) | 0 |
+| `flutter build apk --debug` | Son retry düzeltmesi dahil başarılı; normal APK test build'inden önce korundu | 0 |
+| `npx.cmd --yes supabase@2.119.0 db reset --local` | Son 15 migration ve iki seed boş yerel DB'ye uygulandı | 0 |
+| `npx.cmd --yes supabase@2.119.0 test db --local` | 14 paket / 1.071 assertion PASS; yeni konum 69, mevcutlar 1.002 | 0 |
+| `powershell -NoProfile -ExecutionPolicy Bypass -File supabase/tests/run-local-auth-check.ps1 -TestFile tracking_realtime_test.dart` | Gerçek Auth/SDK özel kanal, DB→WebSocket bildirimi ve yabancı kanal reddi 1/1 | 0 |
+| `flutter test integration_test/tracking_smoke_test.dart -d emulator-5554` | 1/1; native MapLibre ekranı ve Android sistem geri gezinmesi | 0 |
+| `git diff --check` | Belge kapanışında temiz | 0 |
+
+Normal APK: `build/app/outputs/flutter-apk/peksen-gida-phase12-debug.apk`, **238.464.236 bayt**. Integration çalıştırıcısı `app-debug.apk` dosyasını değiştirebilir; korunan dosya normal uygulama build'idir. Bu build public backend değerleri verilmeden üretildi; gerçek backend cihaz kabulünde mevcut güvenli yapılandırma kullanılmalıdır.
+
+Android smoke **sentetik repository/konum kaynağı** ve gerçek native MapLibre widget'ıyla çalıştı; gerçek GPS izni/ölçümü veya Android→Supabase uçtan uca konum yayını sınanmadı. Harita pikselleri görsel olarak incelenmedi. Gerçek SDK/Realtime kabulü ayrıca yerel masaüstü testidir; ikisi birleştirilerek gerçek cihaz kabulü sayılmaz.
+
+DB paketi primary/assistant, farklı Customer/atanmamış Driver, pasif hesaplar, eski/geçersiz ölçüm, aynı anahtarla tekrar, eski cihaz reddi, yalnız son nokta, sipariş değişmemesi ve son nokta silmeyi doğrular. Widget testleri offline örneğin tekrar gönderilmemesi, kaynak durdurma, eski konum uyarısı, erişim hatasında haritanın gizlenmesi, küçük ekran ve geri gezinmeyi doğrular. SDK testi yalnız `{changed:true}` + Realtime'ın mesaj UUID'sini alır; koordinat veya iş kimliği yayınlanmaz. Sentetik parola yalnız bellekte oluşturuldu; önceki hash'ler geri yüklendi.
+
+Başarısız geliştirme denemeleri başarı sayılmaz: ilk reset Supabase-owned tabloya ALTER nedeniyle 1; satır kaldırılınca 0. URL boşluk testi düzeltildi. SDK testinde nullable URL ve SDK mesaj zarfı beklentisi düzeltildi; gerçek yabancı kanal reddi korunur. Son uygulama kapsamı auth dinleyicisi oturum yokken retry timer üretti: bir tam koşu 112 geçti / 114 başarısız (çıkış 1); beklenen yetkisiz durumda provider retry kapatıldı, aynı 226 test değiştirilmeden 226/226 geçti. Ara analyze lint hataları düzeltildi.
+
+**Gerçek cihaz kabulü yapılmadı.** Yalnız emulator-5554 bağlı. Gerçek cihazda primary Driver'ın yola çıkmış seferinde görünür ekrandan paylaşım başlatılıp bildirim/15 saniye hedefi, ekran kapalı çalışma, izin reddi/sonradan kaldırma, GPS kapanması, bağlantı kesilip yeniden gelmesi (eski örnek tekrarı olmaması) kontrol edilmeli. Başka müşteri/assistant okumaları, 60 saniye eski uyarısı, logout/task kapanması ve son paylaşılabilir teslimat/sefer bittiğinde konumun silinmesi/servisin durması uçtan uca gözlenmeli. Faz 13 geçiş servisi henüz açılmadığından bitiş senaryosu kontrollü sentetik yerel fixture ile denenir; yeni teslimat kuralı üretilmez. Üretim sağlayıcısı/lisansı ve assistant GPS devri açık kalır.
+
 ## Faz 11 doğrulaması — 11 Ekim 2026
 
 Kanıt dizini `build/phase11-validation-20261011/`; loglar `COMMAND`, `EXIT_CODE`, `END` içerir. Kesinti sonrası başarılı önceki geniş koşular yeniden çalıştırılmadı. Son Manager/Owner sıra yetkisi daraltması ve kapanış guard düzenlemesi için yalnız ilgili testler tamamlandı. Başarısız geliştirme denemeleri aşağıdaki başarı toplamına dahil değildir.

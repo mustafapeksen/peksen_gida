@@ -1,5 +1,20 @@
 # Pekşen Gıda — Karar kaydı
 
+## F12-01 — 11 Ekim 2026 onayı; 12 Ekim doğrulama devamı
+
+- Faz 12 yalnız arka plan GPS, Realtime ve MapLibre'dır. Konumu yalnız aktif seferin primary Driver'ı gönderir; assistant kendi seferini okur. Assistant'a kaynak devri açık karardır.
+- Hedef ölçüm aralığı 15 saniye; sefer başına yalnız son nokta; rota geçmişi ve kalıcı offline kuyruk yoktur. 60 saniye üzerindeki ölçüm eski olarak gösterilir. Yeniden bağlantıda yalnız yeni ölçüm gönderilir.
+- Customer yalnız kendi açık/tamamlanmamış durağındaki `out_for_delivery` siparişi boyunca görür. Manager/Owner aktif seferleri, Driver kendi seferini görür; Sales/Warehouse/Accounting takip erişimi almaz. Sefer bitince veya paylaşılabilir sipariş kalmayınca son nokta silinir.
+- İzin reddi/GPS kapanması sipariş durumunu değiştirmez; takip sorunu görünür. Servis Driver'ın görünür ekrandaki açık eylemiyle başlar, Android bildirimi gösterir. Process/task kapanınca otomatik yeniden başlatılmaz; kullanıcı yeniden başlatır. Bildirim izni de reddedilirse servis açılmaz. Bunlar iş durumunu değiştirmeyen teknik güvenlik sınırlarıdır.
+- Aynı primary hesabın ikinci cihazından açık başlatma yeni, yalnız bellekte tutulan publisher kimliği üretir; önceki cihazın yazması reddedilir. Assistant'a devir değildir. Sunucu 60 saniyeden eski / 15 saniyeden fazla gelecekteki örnekleri kabul etmez; saat sapması takip hatası olarak ele alınır.
+- Realtime özel kullanıcı kanalına yalnız `{changed:true}` bildirir; koordinat/rota/sipariş kimliği yayınlanmaz. Her okumada güncel RPC yetkisi uygulanır; bağlantı/hata durumunda eski harita gizlenir. Periyodik yenileme yedektir. Eski `driver_locations` geçmiş tablosuna yazılmaz; yeni private tabloda yalnız son nokta vardır.
+- `MAP_STYLE_URL` HTTPS ve yapılandırılabilir; yalnız debug boş yapılandırmada MapLibre demo stili kullanılır. Üretim sağlayıcısı, lisansı/kotası ve gerçek Android ekran-kapalı kabulü açık kalır. Demo haritası üretim sağlayıcı kabulü değildir.
+- Faz 13 teslimat kesinleştirme; cari/çeyrek, telafi, revizyon, tahsilat düzeltme/iptal, başlamış seferde ekip değişimi bu çalışmaya eklenmez.
+
+Teknik uygulama: Realtime servis hatası iş transaction'larını geri almaz; konum silme hataları bastırılmaz. Kanal alıcısı haritaya girmeden sefer ekranından da kaydedilir. Oturum değişikliği uygulama kapsamında dinlenir ve native paylaşım durdurulur; oturum yokken otomatik provider retry kapalıdır. Bunlar yeni sipariş/ödeme/teslimat/stok kuralı getirmez.
+
+Açık kabul: gerçek cihazda ekran kapalı takip, izin reddi/sonradan kaldırma, GPS kapanması, ağ kesintisi/geri gelmesi, logout/task kapanması ve sefer sonunda servis durması. Otomatik emülatör testi bunların yerine geçmez. Üretim stil sağlayıcısı/lisansı/kotası ve assistant GPS devri ayrıca karara bağlanacaktır. Android servis yaklaşımı [Android location foreground service](https://developer.android.com/develop/background-work/services/fgs/service-types#location), harita bağımlılığı [MapLibre Flutter](https://maplibre.org/flutter-maplibre-gl/) sözleşmesine dayanır.
+
 ### F11-01 — Onaylı araç, sefer ve atama sözleşmesi (11 Ekim 2026)
 
 **Kapanış:** Onaylı yerel kapsam tamamlandı. Son kanıt: 79 yeni + 850 mevcut DB assertion, altı iki-bağlantılı yarış, 205 Flutter testi ve son daraltma sonrası ilgili 14 test, analyze/debug build ve emulator-5554 üzerinde 9 Android testi; çıkışlar 0. Ayrıntılı komut ve manuel kabul sınırları PROGRESS/TESTING başındadır. Bu kapanış yeni yetki/iş kuralı eklemez.

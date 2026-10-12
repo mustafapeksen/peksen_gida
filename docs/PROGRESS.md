@@ -1,5 +1,17 @@
 # Pekşen Gıda ilerleme kaydı
 
+## 12 Ekim 2026 — Faz 12 yerel kapanış; gerçek cihaz kabulü açık
+
+Faz 11 `f63df15` ile commit edilmiş temiz çalışma ağacından devam edildi. F12-01 kullanıcı onayları: primary GPS, son nokta/15 saniye/60 saniye, erişim bitiminde silme, offline kuyruksuz paylaşım ve yapılandırılabilir debug demo haritası. Faz 13 açılmadı.
+
+Yeni private konum RPC/RLS migration'ı, özel Realtime yenileme kanalı, Android görünür bildirimli konum servisi ve Flutter MapLibre takip ekranı eklendi. Primary yayınlar; assistant/Manager/Owner ve yalnız kendi aktif teslimatındaki Customer yetkili okur. Sipariş, ödeme, teslimat onayı ve stok iş kuralları değiştirilmedi. Önceki migration/seed/DB testleri korunur.
+
+Son kaynakta `flutter analyze` temiz, `flutter test` 226/226, debug build başarılı; çıkışlar 0. `pub get` 11 Ekim çıkış 0 kanıtı korundu. Son reset 0, tüm 14 DB paketi 1.071 assertion (konum 69 + mevcut 1.002) PASS/0. Gerçek SDK özel kanal/DB bildirimi/yabancı kanal reddi testi 1/1, çıkış 0; son migration üzerinde tekrar doğrulandı. Oturum yokken gereksiz retry timer hatası aynı testler korunarak düzeltildi. Emulator-5554 tracking integration 1/1, çıkış 0: sentetik konumla native MapLibre ekranı/geri gezinme; gerçek GPS veya görsel piksel kabulü değildir. `git diff --check` temiz, çıkış 0. Kanıtlar TESTING başındadır.
+
+Değişen alanlar: `lib/features/tracking/` (repository, native kaynak köprüsü, publisher, provider, harita/ekran); `lib/core/config/map_style_config.dart`, app/router/account/dispatch bağlantıları; Android Manifest/MainActivity ve yeni LocationTrackingService; pubspec/lock ve `.env.example`; Supabase config/yeni live_tracking migration/DB ve SDK testi/auth test çalıştırıcısı; iki Flutter test dosyası ve tracking integration; AGENTS/PLAN/DECISIONS/PROGRESS/TESTING/supabase README. Ayrıntılı değişiklik listesi Git çalışma ağacındadır; commit/push yapılmadı.
+
+**Faz 12 tamamlanmadı: gerçek Android kabulü bekliyor.** Yalnız emulator-5554 bağlı. Ekran kapalı takip, cihazda izin reddi/GPS kapatma, bağlantı kesilmesi/yeniden bağlanma, logout/task kapanması ve sefer sonunda native servisin durması gerçek cihazda gözlenmedi. Üretim harita sağlayıcısı/lisansı/kotası ve assistant GPS devri açık. Sonraki somut iş bu gerçek cihaz kabulüdür; Faz 13'e geçilmez.
+
 ## Faz 11 — 11 Ekim 2026, araç/sefer/durak
 
 Başlangıç temiz `main`, son commit `348e937` (Faz 10). Kullanıcının üç açık onayı DECISIONS **F11-01**'de; son devam talebi yalnız kapanış/doğrulamadır. Mevcut değişiklikler korunmuş, önceki fazlar yeniden oluşturulmamıştır.

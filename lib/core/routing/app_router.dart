@@ -1,5 +1,6 @@
 import '../../features/finance/presentation/finance_page.dart';
 import '../../features/delivery/presentation/dispatch_page.dart';
+import '../../features/tracking/presentation/tracking_page.dart';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -81,6 +82,10 @@ GoRouter createAppRouter({
         path: '/account',
         builder: (context, state) => const AccountPage(),
         routes: [
+          GoRoute(
+            path: 'tracking',
+            builder: (context, state) => const TrackingPage(),
+          ),
           GoRoute(
             path: 'dispatch',
             builder: (context, state) => const DispatchPage(),

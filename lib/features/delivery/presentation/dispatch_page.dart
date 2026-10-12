@@ -7,6 +7,7 @@ import '../../auth/domain/account_repository.dart';
 import '../../auth/presentation/auth_providers.dart';
 import '../../products/presentation/price_page.dart' show newOperationKey;
 import '../data/dispatch_repository.dart';
+import '../../tracking/presentation/tracking_providers.dart';
 
 bool canUseDispatch(AccountRole role) => const {
   AccountRole.manager,
@@ -69,7 +70,7 @@ class _DispatchPageState extends ConsumerState<DispatchPage> {
   @override
   void initState() {
     super.initState();
-    // Narrow dispatch polling; no GPS, location permission or Phase 12 service.
+    // Fallback when Realtime is unavailable; updates contain no location data.
     timer = Timer.periodic(const Duration(seconds: 5), (_) {
       if (!busy && ModalRoute.of(context)?.isCurrent == true) {
         ref.invalidate(dispatchDataProvider);
@@ -174,7 +175,7 @@ class _DispatchPageState extends ConsumerState<DispatchPage> {
                           ? 'Atama kapalı (geçmiş)'
                           : dispatchStatus(stop['order_status']),
                     ),
-                if (!manager && open && movable.indexOf(stop) > 0)
+                    if (!manager && open && movable.indexOf(stop) > 0)
                       TextButton(
                         onPressed: enabled
                             ? () {
@@ -373,76 +374,84 @@ class _DispatchPageState extends ConsumerState<DispatchPage> {
   }
 
   @override
-  Widget build(BuildContext context) => Scaffold(
-    appBar: AppBar(
-      title: const Text('Araç ve seferler'),
-      actions: [
-        IconButton(
-          onPressed: busy ? null : refresh,
-          icon: const Icon(Icons.refresh),
-          tooltip: 'Yenile',
-        ),
-      ],
-    ),
-    body: ref
-        .watch(accountProfileProvider)
-        .when(
-          loading: () => const Center(child: CircularProgressIndicator()),
-          error: (_, _) =>
-              const Center(child: Text('Hesap bilgisi alınamadı.')),
-          data: (profile) {
-            if (profile == null || !canUseDispatch(profile.role)) {
-              return const Center(
-                child: Text('Bu ekrana erişim yetkiniz yok.'),
-              );
-            }
-            final pending = ref.watch(dispatchPendingProvider);
-            final enabled = !busy && pending.hasValue && pending.value == null;
-            return ListView(
-              padding: const EdgeInsets.all(16),
-              children: [
-                const Text(
-                  'Sıra ve atamalar bu ekran açıkken 5 saniyede yenilenir. Yola çıkış için tüm açık siparişler yüklü olmalıdır. Teslimat onayı ve GPS bu ekranda yoktur.',
-                ),
-                pending.when(
-                  loading: () => const LinearProgressIndicator(),
-                  error: (_, _) => const Text(
-                    'Bekleyen işlem kontrol edilemedi. Yenileyin.',
+  Widget build(BuildContext context) {
+    ref.listen(trackingChangesProvider, (_, _) {
+      if (!busy) ref.invalidate(dispatchDataProvider);
+    });
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Araç ve seferler'),
+        actions: [
+          IconButton(
+            onPressed: busy ? null : refresh,
+            icon: const Icon(Icons.refresh),
+            tooltip: 'Yenile',
+          ),
+        ],
+      ),
+      body: ref
+          .watch(accountProfileProvider)
+          .when(
+            loading: () => const Center(child: CircularProgressIndicator()),
+            error: (_, _) =>
+                const Center(child: Text('Hesap bilgisi alınamadı.')),
+            data: (profile) {
+              if (profile == null || !canUseDispatch(profile.role)) {
+                return const Center(
+                  child: Text('Bu ekrana erişim yetkiniz yok.'),
+                );
+              }
+              final pending = ref.watch(dispatchPendingProvider);
+              final enabled =
+                  !busy && pending.hasValue && pending.value == null;
+              return ListView(
+                padding: const EdgeInsets.all(16),
+                children: [
+                  const Text(
+                    'Sıra ve atamalar anlık bildirimle, bağlantı kesilirse 5 saniyede yenilenir. Yola çıkış için tüm açık siparişler yüklü olmalıdır. Konum haritası Hesabım ekranındadır.',
                   ),
-                  data: (request) => request == null
-                      ? const SizedBox.shrink()
-                      : Column(
-                          children: [
-                            const Text(
-                              'Sonucu alınmamış işlem var. Yeni işlemden önce aynı isteği yeniden deneyin.',
-                            ),
-                            TextButton(
-                              onPressed: busy ? null : () => recover(request),
-                              child: const Text('Bekleyen işlemi yeniden dene'),
-                            ),
-                          ],
-                        ),
-                ),
-                if (message != null) Text(message!),
-                ref
-                    .watch(dispatchDataProvider)
-                    .when(
-                      loading: () =>
-                          const Center(child: CircularProgressIndicator()),
-                      error: (_, _) => const Text(
-                        'Seferler alınamadı. Yenileyerek tekrar deneyin.',
-                      ),
-                      data: (data) => workspace(
-                        data,
-                        profile.role != AccountRole.driver,
-                        enabled,
-                      ),
+                  pending.when(
+                    loading: () => const LinearProgressIndicator(),
+                    error: (_, _) => const Text(
+                      'Bekleyen işlem kontrol edilemedi. Yenileyin.',
                     ),
-              ],
-            );
-          },
-        ),
-  );
+                    data: (request) => request == null
+                        ? const SizedBox.shrink()
+                        : Column(
+                            children: [
+                              const Text(
+                                'Sonucu alınmamış işlem var. Yeni işlemden önce aynı isteği yeniden deneyin.',
+                              ),
+                              TextButton(
+                                onPressed: busy ? null : () => recover(request),
+                                child: const Text(
+                                  'Bekleyen işlemi yeniden dene',
+                                ),
+                              ),
+                            ],
+                          ),
+                  ),
+                  if (message != null) Text(message!),
+                  ref
+                      .watch(dispatchDataProvider)
+                      .when(
+                        loading: () =>
+                            const Center(child: CircularProgressIndicator()),
+                        error: (_, _) => const Text(
+                          'Seferler alınamadı. Yenileyerek tekrar deneyin.',
+                        ),
+                        data: (data) => workspace(
+                          data,
+                          profile.role != AccountRole.driver,
+                          enabled,
+                        ),
+                      ),
+                ],
+              );
+            },
+          ),
+    );
+  }
 }
 
 class DispatchDialog extends StatefulWidget {

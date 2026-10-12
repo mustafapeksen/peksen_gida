@@ -1,5 +1,6 @@
 import '../../finance/presentation/finance_page.dart' show canUseFinance;
 import '../../delivery/presentation/dispatch_page.dart' show canUseDispatch;
+import '../../tracking/presentation/tracking_providers.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -94,6 +95,12 @@ class _AccountPageState extends ConsumerState<AccountPage>
                         Wrap(
                           spacing: 8,
                           children: [
+                            if (canUseTracking(value.role))
+                              TextButton(
+                                onPressed: () =>
+                                    context.push('/account/tracking'),
+                                child: const Text('Canlı teslimat konumu'),
+                              ),
                             if (canReadProducts(value.role))
                               TextButton(
                                 onPressed: () =>
