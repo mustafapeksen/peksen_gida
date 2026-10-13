@@ -1,4 +1,5 @@
 import '../../features/notifications/presentation/notification_page.dart';
+import '../../features/reports/presentation/reports_page.dart';
 import '../../features/notifications/presentation/campaign_page.dart';
 import '../../features/finance/presentation/finance_page.dart';
 import '../../features/delivery/presentation/dispatch_page.dart';
@@ -85,6 +86,18 @@ GoRouter createAppRouter({
         path: '/account',
         builder: (context, state) => const AccountPage(),
         routes: [
+          GoRoute(
+            path: 'reports',
+            builder: (context, state) => const ReportsPage(),
+          ),
+          GoRoute(
+            path: 'salary',
+            builder: (context, state) => const ReportsPage(section: 'salary'),
+          ),
+          GoRoute(
+            path: 'audit',
+            builder: (context, state) => const ReportsPage(section: 'audit'),
+          ),
           GoRoute(
             path: 'notifications',
             builder: (context, state) => const NotificationPage(),

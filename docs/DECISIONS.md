@@ -1,5 +1,17 @@
 # Pekşen Gıda — Karar kaydı
 
+## F15-01 — 13 Ekim 2026 onaylı Manager/Owner raporları
+
+- Kullanıcı Faz 14 yerel kapsamını `4a61a11` ile kabul edip yalnız PLAN Faz 15'i açtı. Manager/Owner rapor okur; diğer rollerin rapor erişimi yoktur.
+- Başlangıç/bitiş günleri dahil Europe/Istanbul aralığı kullanılır. Siparişler oluşturulma tarihine göre seçilip **mevcut** durumlarıyla sayılır. Teslimat adedi ve sipariş toplamı, mevcut kesinleşme olgusunun tarihine göre raporlanır. Bunlar kâr/ciro veya tarihsel durum rekonstrüksiyonu değildir.
+- Tahsilatlar tahsilat tarihine göre, mevcut `recorded` ve `verified` durumları ayrı gösterilerek toplanır. Bu iki grup birbirini dışlar; doğrulama tarihi kullanılmaz. Düzeltme/iptal/net muhasebe raporu açılmaz.
+- Stok fiziksel/rezerve/kullanılabilir taban miktarlarıyla **anlık** gösterilir. Farklı ürün/birim miktarları birbirine eklenmez. Driver puanları **tüm zamanların** adet/aritmetik ortalama/1–5 dağılımıdır; otomatik performans/prim formülü yoktur.
+- Yalnız Owner çalışan+ay başına tek manuel maaş/prim kaydı oluşturur veya gerekçeyle düzeltir. Tutarlar negatif olmayan integer kuruştur. Değişiklik geçmişi ve audit atomiktir; aynı istek tekrarı ikinci kayıt üretmez. Eski revision gönderimi çakışma olarak reddedilir. Kayıt silme, otomatik bordro/prim, ödeme veya muhasebe işlemi yoktur. Mevcut eski kayıtlar korunur; önceki değişiklik geçmişi uydurulmaz.
+- Owner audit ekranı yalnız aktör/olay/kayıt/zaman projection'ını okur; ham JSON ve hassas içerik göstermez. Yeni sistem ayarı düzenleme yetkisi açılmaz. Mevcut Owner ham tablo SELECT politikaları korunur; ham yazma grant'i açılmaz.
+- Teknik sınırlar: tarih filtreli tek rapor çağrısı aynı veritabanı snapshot'ından hesaplanır; maaş düzeltmelerinde revision kontrolü, aktör/anahtar/payload tekilliği ve kilit kullanılır. Sonucu belirsiz maaş isteği aktör/proje ayrımlı şifreli saklanır; yeniden gönderim kullanıcının açık eylemidir, offline işlem kuyruğu değildir.
+
+Faz 12 uzun süreli/izin kaldırma/otomatik fiziksel bitiş/üretim harita/assistant devri; Faz 13 fiziksel kanıt görseli ve saklama/failed-returned/telafi; Faz 14 gerçek Firebase/push kabulü ayrı açık kalır. Gerçek revizyon, tahsilat düzeltme/iptal ve açık çeyrek kuralları uygulanmaz. Faz 16 açılmaz.
+
 ## F14-01 — 13 Ekim 2026 onaylı bildirim sınırları
 
 Kullanıcı alıcı ve kampanya kararlarını onayladı. PLAN Faz 14 FCM notifications kapsamıdır; Faz 15 açılmaz. Firebase projesi henüz yoktur: yerel altyapı uygulanır, gerçek FCM ve fiziksel Android kabulü açık kalır.

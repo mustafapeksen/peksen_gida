@@ -1,5 +1,17 @@
 # Pekşen Gıda ilerleme kaydı
 
+## 13 Ekim 2026 — Faz 15 onaylı kapsam tamamlandı
+
+Başlangıç temiz `4a61a11`; kullanıcı Faz 14 yerel kapsamını kabul etti. PLAN Faz 15 **Manager + Owner + reports** ve onaylı F15-01 uygulandı. Manager/Owner İstanbul tarih aralığında sipariş durum sayılarını, kesinleşmiş teslimat adet/toplamını, ayrı recorded/verified tahsilat toplamlarını; anlık stok ve tüm zamanların sürücü puan dağılımını okur. Hesabım kartları ve gerçek oturum gerektiren rapor rotaları eklendi; preview ve Faz 6–14 akışları korundu.
+
+Yalnız Owner manuel aylık maaş/prim oluşturur veya gerekçeyle düzeltir. Çalışan+ay tekilliği, eski sürüm kontrolü, aktör/anahtar/payload tekrarı, değiştirilemez geçmiş ve audit aynı transaction'dadır. Belirsiz RPC sonucu şifreli, aktör/proje ayrımlı istekle yeniden alınır. Owner audit ekranı sadece olay/aktör/kayıt/zaman özeti ve sayfalama sunar. Otomatik prim/bordro/ödeme veya ayar yazma yoktur; ham tablo yazmaları kapalı kalır.
+
+Eklenenler: `20261013000200_management_reports.sql` (18. migration; iki private yardımcı tablo), `lib/features/reports/` repository/ekranı, `management_reports_test.sql`, `salary_concurrency_test.py`, `reports_client_test.dart`, `test/reports_test.dart`, `integration_test/reports_smoke_test.dart`. Hesap kartı/router ve yerel Auth test runner dosya izin listesi güncellendi. Belgeler: AGENTS, README, PLAN, DECISIONS, PROGRESS, TESTING, supabase README. Önceki migration, seed ve DB test dosyaları değişmedi; public iş tablosu sayısı 35 olarak kaldı.
+
+Doğrulama: pub get/analyze/debug build **çıkış 0**; tam Flutter **288/288 / 0** (önceki 264 + yeni 24); tüm **17 DB paketi / 1.330 assertion / PASS / 0** (önceki 1.235 + yeni 95). İki gerçek DB bağlantısıyla maaş oluşturma/düzeltme/tekrar **3/3 / 0**; gerçek yerel Auth/PostgREST repository kontrolü **1/1 / 0**; emulator-5554 Android **3/3 / 0**. Loglar, ilk başarısız denemeler ve son kontrol sınırları TESTING başındadır. Normal APK ayrıca korundu.
+
+**Faz 15'in onaylı yerel kabul ölçütleri karşılandı.** Raporların kayıtlarla tutarlılığı ve Owner-only maaş/prim erişimi test edildi. Fiziksel cihaz görsel kabulü bu tur yapılmadı; emülatör testleri mock repository kullanır, gerçek backend kanıtı DB/SDK koşularındadır. F12–14 açık GPS/kanıt/FCM/üretim kabulleri kapanmış sayılmadı. Faz 16 başlamadı; secret, commit veya push yok.
+
 ## 13 Ekim 2026 — Faz 14 yerel altyapı doğrulandı; gerçek FCM kabulü açık
 
 Başlangıç temiz `1e34812`; önceki Faz 14 değişiklikleri korunarak F14-01 onayları uygulandı. Private cihaz/session, kampanya, olay ve gönderim kuyruğu; kendi bildirim geçmişi/okundu RPC'leri; güncel yetki denetimli yönlendirme; Flutter bildirim/duyuru ekranları ve opsiyonel Firebase istemcisi eklendi. Eski 16 migration ve seed/testler değişmedi. Android LAN fix ve preview korunur. Secret, commit/push veya Faz 15 yok.

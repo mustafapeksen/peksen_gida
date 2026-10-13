@@ -1,5 +1,7 @@
 # Pekşen Gıda
 
+**Faz 15 — 13 Ekim 2026:** Gerçek Manager/Owner oturumunda Hesabım → Operasyon raporları; yalnız Owner için Maaş ve prim / Audit kayıtları eklendi. Rapor tarihleri İstanbul gün sınırlarına göre, stok anlık, sürücü puanları tüm zamanlardır. Maaş/prim manuel aylık kayıt olup bordro veya ödeme üretmez; düzeltme gerekçe ve güncel sürüm ister. On sekizinci migration gerekir. Yerel kabul ve komutlar [TESTING](docs/TESTING.md), onaylı sınırlar [DECISIONS](docs/DECISIONS.md) içindedir. Faz 12–14 fiziksel/üretim açıkları korunur; Firebase olmadığından gerçek push kabulü açık kalır. Aşağıdaki faz durumları tarihçedir.
+
 **Faz 7:** Sales Operator hesabında “Müşteri adına sipariş” yalnız atanmış aktif müşterileri listeler. Seçilen müşterinin adı ortak katalog/sepet ekranının üstünde görünür. Müşteriden çıkarken kaydedilmemiş sepet temizlenir; sunucu taslağı ve bekleyen gönderim müşteriye/aktöre özeldir. Oluşturucu olmak tek başına erişim sağlamaz. Customer akışı ve Faz 6 hesapları korunur; son kabul [TESTING](docs/TESTING.md), yetki değişikliği F7-01'dedir.
 
 **Faz 6 (9 Ekim 2026):** Customer hesabında “Katalog ve sepet” üzerinden ürün/birim/miktar, sunucuda taslak ve açık fiyat onaylı gönderim bulunur; kendi siparişleri katalogdaki fiş simgesindedir. Fiyat/dönüşüm/stok farkı yeni onay gerektirir. Yeterli stokta rezervasyon, yetersiz stokta yönetici onay isteği oluşur. Cari kontrol henüz hesaplanmaz ve gönderim borç/tahsilat üretmez. Sales UI Faz 7'ye bırakıldı. Son doğrulamalar [TESTING](docs/TESTING.md), teknik sınırlar F6-01'dedir.

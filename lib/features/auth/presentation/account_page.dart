@@ -173,6 +173,25 @@ class _AccountPageState extends ConsumerState<AccountPage>
                             icon: Icons.manage_accounts_outlined,
                             route: '/account/admin',
                           ),
+                        if (value.role == AccountRole.owner ||
+                            value.role == AccountRole.manager)
+                          _AccountAction(
+                            title: 'Operasyon raporları',
+                            icon: Icons.bar_chart,
+                            route: '/account/reports',
+                          ),
+                        if (value.role == AccountRole.owner) ...[
+                          _AccountAction(
+                            title: 'Maaş ve prim',
+                            icon: Icons.badge_outlined,
+                            route: '/account/salary',
+                          ),
+                          _AccountAction(
+                            title: 'Audit kayıtları',
+                            icon: Icons.history,
+                            route: '/account/audit',
+                          ),
+                        ],
                         _AccountAction(
                           title: 'Bildirimler',
                           icon: Icons.notifications_outlined,

@@ -1,5 +1,38 @@
 # Pekşen Gıda doğrulama ve test planı
 
+## 13 Ekim 2026 — Faz 15 rapor / Owner maaş ve audit kabulü
+
+Başlangıç temiz `4a61a11`. Kanıt dizini: `build/phase15-validation-20261013/`. Komutlar depo kökünde, yalnız yerel Supabase üzerinde çalıştırıldı. Çıkışlar tamamlanan süreçlerden alındı; APK varlığı tek başına build kanıtı sayılmadı.
+
+| Komut | Sonuç | Çıkış | Log |
+| --- | --- | --- | --- |
+| `flutter pub get` | Başarılı; yeni bağımlılık yok | 0 | `pub-get.log` |
+| `flutter analyze` | Temiz | 0 | `analyze.log` |
+| `flutter test test/reports_test.dart` | 24/24 | 0 | `flutter-reports.log` |
+| `flutter test` | 288/288 (264 eski + 24 yeni) | 0 | `flutter-all.log` |
+| `flutter build apk --debug` | Debug APK başarıyla derlendi | 0 | `build-debug.log` |
+| `npx.cmd --yes supabase@2.119.0 db reset --local` | 18 migration + iki mevcut seed | 0 | `db-reset-final.log` |
+| `npx.cmd --yes supabase@2.119.0 test db --local supabase/tests/database` | 17 paket / 1.330 assertion PASS; yeni rapor paketi 95 | 0 | `db-all-final.log` |
+| `python supabase/tests/client/salary_concurrency_test.py` | İki gerçek bağlantı: 3/3 | 0 | `salary-concurrency.log` |
+| `powershell -NoProfile -ExecutionPolicy Bypass -File supabase/tests/run-local-auth-check.ps1 -TestFile reports_client_test.dart` | Gerçek Auth/PostgREST + uygulama repository: 1/1 | 0 | `reports-sdk.log` |
+| `flutter test integration_test/reports_smoke_test.dart -d emulator-5554` | Android rapor/geri, Owner form, Accounting ret: 3/3 | 0 | `android-reports.log` |
+| `npx.cmd --yes supabase@2.119.0 db reset --local` — SDK sonrası temizlik | Committed sentetik maaş kayıtları temizlendi; seed yeniden yüklendi | 0 | `db-cleanup.log` |
+| `git diff --check` — kapanış | Temiz | 0 | `diff-check.log` |
+
+Korunan normal uygulama APK'sı: `build/phase15-validation-20261013/peksen-gida-phase15-debug.apk`, **223.427.603 bayt**. Integration çalıştırıcısı standart `app-debug.apk` dosyasını test APK'sıyla değiştirebilir. Build'in mevcut Kotlin eklentisi geçiş uyarısı derlemeyi engellemedi; bu fazda paket yükseltmesi yapılmadı.
+
+DB kapsamı: tüm roller/anonim/pasif Owner; Manager maaş/audit reddi; ham yazma/silme/private geçmiş erişim reddi; İstanbul gününün iki sınırı ve sonraki gece yarısı; tahsilat tarihi/durum ayrımı; boş aralık; teslimat tek sayımı; anlık stok/tüm zamanlar puan dağılımı; aylık tekillik; zorunlu gerekçe/negatif tutar/yanlış çalışan reddi; stale revision, tekrar ve farklı payload reddi; audit hatasında kayıt/geçmiş/receipt rollback; immutable geçmiş; hassas alanları içermeyen audit cursor sayfalaması. Eski 19 identity ve 140 business dahil önceki 16 paket değişmeden geçti.
+
+Gerçek eşzamanlılık testi aynı çalışan/ay için tek oluşturma, eski sürümlü düzeltme reddi ve eşzamanlı aynı isteğin tek kayıt/geçmiş/audit oluşturmasını doğrular. Sentetik committed veriler test sonrası local reset ile temizlenir. SDK testi gerçek Manager/Owner oturumları ve RPC'lerle `9007199254740993` kuruşun string üzerinden kayıpsız taşındığını, tek tekrar/geçmişi ve yetkisiz okumayı doğrular. Yalnız secure-storage plugin'i bu host testinde bellek sahtesidir; gerçek Android şifreli depolama yeniden kabul edilmiş sayılmaz. Runner geçici parola hash'lerini geri yükler, değerleri yazmaz.
+
+İlk başarısız denemeler: DB fixture tek aktif Owner'ı pasifleştirmeye çalıştı; ikinci sentetik Owner eklenerek mevcut koruma korundu. Analyze bir blok süslü parantez lint'i verdi, düzeltildi. Tam DB koşusunda yeni private invoker trigger eski helper güvenlik testine takıldı; eski test gevşetilmeden mevcut `public.reject_fact_mutation()` yeniden kullanıldı. Yeni SDK testinin ilk denemesinde Flutter widget binding HTTP'yi 400 ile engelledi; yalnız testin loopback HTTP ortamı açıldı, gerçek SDK koşusu ardından geçti. Bu denemeler başarı sayılmadı.
+
+**Kabul sınırı:** Faz 15 onaylı yerel kapsam tamamlandı. 320×568 widget düzeni, güvenli hata/yükleniyor/boş sonuç, yetki kaldırıldığında eski raporun gizlenmesi, exact form ve tekrar kurtarma kontrol edildi. Android 17/API 37 `emulator-5554` testleri UI/mock repository kullanır; gerçek backend kanıtı ayrı SQL/SDK testidir. Fiziksel telefon veya manuel görsel inceleme yapılmadı. Üretim ölçeğinde rapor performansı ve gerçek veri mutabakatı bu sentetik kabulden türetilmez. F12–14 gerçek GPS/kanıt/FCM ve lisans/retention kabulleri ayrı açık kalır; Faz 16 açılmadı.
+
+Kapanışta SDK testi `supabase/tests` altında olduğundan analyzer'ın test dizini tanımasına girmeyen `setMockInitialValues` çağrısı için, mevcut onboarding testiyle aynı açıklamalı tek satırlık test istisnası eklendi. Test davranışı veya uygulama kodu değişmedi; yalnız analyze yeniden çalıştırıldı. Başarılı uzun koşular gereksiz tekrarlanmadı. Diff kontrolü son belgeler dahil alındı.
+
+Yeniden çalıştırma: local reset → DB paketleri → gerekirse concurrency/SDK → sentetik committed kayıtları temizlemek için local reset. Maaş ekranı `/account/salary`, rapor `/account/reports`, audit `/account/audit`; gerçek aktif Manager/Owner profili gerekir. Preview rol seçimi yetki vermez. Migration eski maaş satırlarını korur; önceden mükerrer çalışan/ay veya ay başına uymayan tarih varsa otomatik birleştirme/yuvarlama yapmaz, kurulum constraint hatasıyla durur ve veri kararı gerekir.
+
 ## 13 Ekim 2026 — Faz 14 yerel doğrulama ve son hedef-kayıt regresyonu
 
 Kanıtlar `build/phase14-validation-20261013/`. Başlangıç `1e34812`; önceki değişiklikler korundu. Secret/commit/push/üretim deployment yapılmadı. Son odak değişikliği için etkilenen kontroller tekrarlandı; önceki başarılı uzun koşular son kaynakta bütünüyle yeniden çalıştırılmış gibi gösterilmedi.
