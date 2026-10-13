@@ -11,6 +11,9 @@
         android:label="Pekşen Gıda"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
+        <!-- Registration is opt-in from the notification screen. -->
+        <meta-data android:name="firebase_messaging_auto_init_enabled" android:value="false" />
+        <meta-data android:name="firebase_analytics_collection_enabled" android:value="false" />
         <service android:name=".LocationTrackingService" android:exported="false"
             android:foregroundServiceType="location" android:stopWithTask="true" />
         <activity

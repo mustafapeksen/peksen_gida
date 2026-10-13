@@ -33,15 +33,19 @@ String orderStatusLabel(String status) => switch (status) {
 };
 
 class CustomerOrdersPage extends ConsumerWidget {
-  const CustomerOrdersPage({super.key});
+  const CustomerOrdersPage({super.key, this.orderId});
+  final String? orderId;
   @override
   Widget build(BuildContext context, WidgetRef ref) => Scaffold(
-    appBar: AppBar(title: const Text('Siparişlerim')),
+    appBar: AppBar(
+      title: Text(orderId == null ? 'Siparişlerim' : 'Sipariş detayı'),
+    ),
     body: SafeArea(
       child: ShopGuard(
         child: ref
             .watch(customerOrdersProvider)
             .when(
+              skipLoadingOnRefresh: false,
               loading: () => const Center(child: CircularProgressIndicator()),
               error: (_, _) => Center(
                 child: TextButton(
@@ -63,10 +67,20 @@ class CustomerOrdersPage extends ConsumerWidget {
                     const Text(
                       'Ağ kesintisinde yeniden sipariş vermeden önce buradan kayıt durumunu kontrol edin.',
                     ),
-                    if (orders.isEmpty) const Text('Henüz siparişiniz yok.'),
-                    for (final o in orders)
+                    if (orderId == null && orders.isEmpty)
+                      const Text('Henüz siparişiniz yok.'),
+                    if (orderId != null &&
+                        !orders.any((o) => o['id'] == orderId))
+                      const Text(
+                        'Bu sipariş bulunamadı veya erişiminiz sona erdi.',
+                      ),
+                    for (final o in orders.where(
+                      (o) => orderId == null || o['id'] == orderId,
+                    ))
                       Card(
                         child: ExpansionTile(
+                          key: ValueKey('order:${o['id']}:$orderId'),
+                          initiallyExpanded: orderId != null,
                           title: Text(orderStatusLabel(o['status'] as String)),
                           subtitle: Text(
                             '${o['id']}\n${formatKurus(o['total_kurus'].toString())}',

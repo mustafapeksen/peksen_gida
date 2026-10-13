@@ -66,3 +66,6 @@ enabled = true
 
 [functions.invite-account]
 verify_jwt = false
+
+[functions.push-dispatch]
+verify_jwt = false

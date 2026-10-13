@@ -1,5 +1,17 @@
 # Pekşen Gıda ilerleme kaydı
 
+## 13 Ekim 2026 — Faz 14 yerel altyapı doğrulandı; gerçek FCM kabulü açık
+
+Başlangıç temiz `1e34812`; önceki Faz 14 değişiklikleri korunarak F14-01 onayları uygulandı. Private cihaz/session, kampanya, olay ve gönderim kuyruğu; kendi bildirim geçmişi/okundu RPC'leri; güncel yetki denetimli yönlendirme; Flutter bildirim/duyuru ekranları ve opsiyonel Firebase istemcisi eklendi. Eski 16 migration ve seed/testler değişmedi. Android LAN fix ve preview korunur. Secret, commit/push veya Faz 15 yok.
+
+SPEC §22 olayları: yeni sipariş, onay, alternatif, hazırlık, hazır/Driver ataması, yola çıkış, GPS sorunu, teslim uyuşmazlığı, teslimat, cari aşım ve seçili müşteri duyurusu. Olay toplama/gönderme ayrı sunucu worker'ındadır; bildirim kaybı sipariş transaction'ını geri almaz. Normal fiyat değişimi bildirim üretmez. Push metni ayrıntısızdır; mevcut atama ve aktif oturum gönderim/açılış sırasında tekrar denetlenir. Sadece bildirim geçmişinde Owner genel okuması da kendi kullanıcı kaydıyla sınırlandı; iş yetkileri genişletilmedi.
+
+Son doğrulamalar: pub get/analyze çıkış 0; tam Flutter 256/256, ardından yeni cihaz yaşam döngüsü testi 1/1 ve son etkilenen paket 31/31 çıkış 0. SQL tüm 16 paket **1.230 assertion** (eski 1.147 + yeni 83), reset ve DB test çıkış 0. Deno sender/mock 4/4, gerçek yerel Auth/SDK 1/1 ve Edge yetkisiz HTTP kontrolü 2/2 çıkış 0. Edge ilk çağrıda üç sentetik olgu topladı, tekrarda sıfır; Firebase olmadan `not_configured`, gerçek push gönderilmedi. Debug build ve emulator-5554 bildirim smoke 1/1 başarılı/0; ayrıntılı son kaynak komutları TESTING'de.
+
+**Son yönlendirme düzeltmesi:** Customer/Sales bildirimi yalnız ilgili sipariş kartını açık gösterir; Warehouse doğrudan ilgili Toplama kaydını açar. Yetki kaldırılmışsa RPC reddeder; hedef artık liste kapsamında değilse başka kayıt gösterilmeden güvenli mesaj çıkar. Yeni yedi odak/yetki testiyle etkilenen Flutter paketi 59/59/0; DB odak/yetki ekleriyle yeni bildirim paketi 88 assertion, dört ilgili paket toplam 302/302/0. Son analyze ve Android sonuçları TESTING'dedir. Önceki uzun başarılı testler tamamı yeniden çalıştırılmış gibi raporlanmadı.
+
+**Faz 14 yerel kapsamı tamamlandı; Faz 14 bütünü tamamlanmadı.** Firebase proje ve çalışma ortamı sunucu kimliği yok; gerçek Android FCM izin/token/arka plan/kapalı uygulama/tıklama kabulü yapılmadı. Üretim zamanlayıcısı kurulmadı. Yerel geçmiş için TESTING'deki worker çalıştırılır. Yeni manuel/görsel veya fiziksel FCM kabulü iddia edilmez. F12/13 açık kabulleri ve diğer açık ticari kurallar değişmedi.
+
 ## 13 Ekim 2026 — Faz 13 onaylı yerel kapsam tamamlandı
 
 F13-01 kararları uygulandı: açık sefer/durağa atanmış primary/assistant Driver bildirimi; Customer çift onayı veya gerekçeli uyuşmazlığı; yalnız Manager/Owner gerekçeli delivered çözümü. Kesinleşme durak kapanışı, teslimat olgusu ve history/audit ile atomiktir; stok/kalem/fiyat değiştirilmez. F10 korunur: kapanan durakta Driver tahsilatı reddedilir, Sales yetkisi değişmez. Fiili Driver sipariş başına yalnız kendi Customer kullanıcısından bir kez 1–5 puan alır; puan düzenleme/silme veya Driver okuması açılmadı.

@@ -1,3 +1,5 @@
+import '../../features/notifications/presentation/notification_page.dart';
+import '../../features/notifications/presentation/campaign_page.dart';
 import '../../features/finance/presentation/finance_page.dart';
 import '../../features/delivery/presentation/dispatch_page.dart';
 import '../../features/delivery/presentation/delivery_page.dart';
@@ -84,6 +86,16 @@ GoRouter createAppRouter({
         builder: (context, state) => const AccountPage(),
         routes: [
           GoRoute(
+            path: 'notifications',
+            builder: (context, state) => const NotificationPage(),
+            routes: [
+              GoRoute(
+                path: 'campaign',
+                builder: (context, state) => const NotificationCampaignPage(),
+              ),
+            ],
+          ),
+          GoRoute(
             path: 'deliveries',
             builder: (context, state) => const DeliveryPage(),
           ),
@@ -101,7 +113,8 @@ GoRouter createAppRouter({
           ),
           GoRoute(
             path: 'inventory',
-            builder: (context, state) => const InventoryPage(),
+            builder: (context, state) =>
+                InventoryPage(orderId: state.uri.queryParameters['order']),
           ),
           GoRoute(
             path: 'order-requests',
@@ -133,7 +146,9 @@ GoRouter createAppRouter({
                       ),
                       GoRoute(
                         path: 'orders',
-                        builder: (context, state) => const CustomerOrdersPage(),
+                        builder: (context, state) => CustomerOrdersPage(
+                          orderId: state.uri.queryParameters['order'],
+                        ),
                         routes: [
                           GoRoute(
                             path: ':orderId/alternatives',
@@ -155,7 +170,9 @@ GoRouter createAppRouter({
             routes: [
               GoRoute(
                 path: 'orders',
-                builder: (context, state) => const CustomerOrdersPage(),
+                builder: (context, state) => CustomerOrdersPage(
+                  orderId: state.uri.queryParameters['order'],
+                ),
                 routes: [
                   GoRoute(
                     path: ':orderId/alternatives',

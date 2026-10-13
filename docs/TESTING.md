@@ -1,5 +1,55 @@
 # Pekşen Gıda doğrulama ve test planı
 
+## 13 Ekim 2026 — Faz 14 yerel doğrulama ve son hedef-kayıt regresyonu
+
+Kanıtlar `build/phase14-validation-20261013/`. Başlangıç `1e34812`; önceki değişiklikler korundu. Secret/commit/push/üretim deployment yapılmadı. Son odak değişikliği için etkilenen kontroller tekrarlandı; önceki başarılı uzun koşular son kaynakta bütünüyle yeniden çalıştırılmış gibi gösterilmedi.
+
+| Komut/kontrol | Sonuç | Çıkış | Log |
+| --- | --- | --- | --- |
+| `flutter pub get` | Başarılı; firebase_core 4.15.0 / firebase_messaging 16.7.0 | 0 | `pub-get-final.log` |
+| `flutter analyze` — son yönlendirme dahil | Temiz | 0 | `analyze-focus-final.log` |
+| `flutter test` — son odak ekinden önce | 256/256 | 0 | `flutter-all.log` |
+| `flutter test test/push_service_test.dart` | 1/1 ek cihaz izin/oturum testi | 0 | `flutter-push-service.log` |
+| `flutter test test/notifications_test.dart test/push_service_test.dart test/account_access_test.dart` | 31/31; çıkış/oturum değişikliği dahil | 0 | `flutter-final-affected.log` |
+| `flutter test test/notification_focus_test.dart test/notifications_test.dart test/customer_checkout_test.dart test/sales_checkout_test.dart test/inventory_test.dart` — son odak | 59/59; 7 yeni hedef/yetki testi dahil | 0 | `flutter-focus.log` |
+| `flutter build apk --debug` — son odak ekinden önce | Debug APK derlendi | 0 | `build-debug-final-source.log` |
+| `npx.cmd --yes supabase@2.119.0 db reset --local` — son migration | 17 migration ve mevcut iki seed | 0 | `db-reset-focus.log` |
+| `npx.cmd --yes supabase@2.119.0 test db --local supabase/tests/database` — son odak ekinden önce | 16 paket / 1.230 assertion; eski 1.147 + bildirim 83 | 0 | `db-all-final.log` |
+| `npx.cmd --yes supabase@2.119.0 test db --local supabase/tests/database/notifications_test.sql supabase/tests/database/customer_checkout_test.sql supabase/tests/database/sales_checkout_test.sql supabase/tests/database/warehouse_inventory_test.sql` — son odak | 4 paket / 302 assertion; bildirim paketi artık 88 | 0 | `db-focus.log` |
+| `npx.cmd --yes deno@2.9.6 test supabase/functions/push-dispatch/worker_test.ts` | 4/4 yerel sender/mock | 0 | `worker.log` |
+| `powershell -NoProfile -ExecutionPolicy Bypass -File supabase/tests/run-local-auth-check.ps1 -TestFile notification_client_test.dart` | Gerçek yerel Auth/SDK 1/1; kayıt/refresh/çıkış, worker erişim reddi | 0 | `notification-sdk.log` |
+| Yerel Edge Function; eksik bearer ve anon bearer | 2/2 HTTP 401 | 0 | `edge-auth.log` |
+| `powershell -NoProfile -ExecutionPolicy Bypass -File supabase/tests/run-notification-worker.ps1` | İlk çağrı 3 sentetik olgu; tekrar 0; `push=not_configured` | 0 | `local-worker-final.log`, `local-worker-replay.log` |
+| `flutter test integration_test/notifications_smoke_test.dart -d emulator-5554` — son odak dahil | 3/3; yeni kaynak Android derleme/kurulum da başarılı | 0 | `android-notifications-focus.log` |
+| `git diff --check` | Temiz | 0 | `diff-check.log` |
+
+Korunan normal APK `build/phase14-validation-20261013/peksen-gida-phase14-debug.apk`, **223.401.481 bayt**; bu normal build son hedef-kayıt odak değişikliğinden öncedir. Son odak kaynağı Android integration tarafından derlenip kurulmuştur; standart `app-debug.apk` test çalıştırıcısı APK'sıdır. Önceki normal build sonucundan son odak için bağımsız normal build yapıldığı çıkarılmaz.
+
+Kapsanan davranışlar: aktif rol/müşteri/Driver alıcısı, Owner dahil kendi geçmişi, anonim ve ham token/worker erişim reddi, session/token bağlama ve yenileme, paylaşılan cihazda eski alıcıya push engeli, okundu tekrarı, bildirim/iş tekilliği, lease/eski ACK/geri çekilme/deneme sınırı, transient GPS olgusu ve bildirim arızasında tracking/sipariş ayrımı. Campaign açık hedef ve gerekçe ister; fiyat değişmez, normal fiyat değişimi yayın üretmez. Sender testleri HTTP sınıflaması, genel payload/sabit tag, ACK kaybı ve yalnız bellekte üretilen RSA anahtarıyla OAuth imzasını kapsar; Google/FCM'ye gerçek gönderim yapılmadı.
+
+Son odak regresyonu: Customer ve atanmış Sales yalnız hedef siparişin açık kartını görür; Warehouse doğrudan hedef hazırlık kaydını görür. Diğer kayıtlar odak yerine gösterilmez. Sales ataması veya Customer üyeliği kaldırıldığında tıklama RPC'si reddedilir. Hedef artık API kapsamında yoksa güvenli mesaj gösterilir. Dış URL, query çoğaltma/ek parametre, fragment ve geçersiz UUID reddedilir. Mevcut checkout, toplama ve yetki testleri de aynı etkilenen koşuda geçti.
+
+İlk başarısız denemeler başarı sayılmadı: yarım SQL'deki var olmayan ürün alanı ve alias çakışması, NULL boolean ve yanlış test fixture sayıları düzeltildi; ilk Gradle `java.util` ad çakışması import ile düzeltildi. Test doubles SDK getToken imzasına uyarlandı ve Türkçe assertion düzeltildi. İlk Edge çağrısı 404 verdi; yerel functions serve başlatıldıktan sonra gerçek HTTP kontrolleri geçti. İlk etkilenen test komutunda var olmayan `auth_test.dart` yolu kullanıldı; doğru `account_access_test.dart` ile 31/31 geçti. Son odak analyze lint'i düzeltildi; tabloda yalnız son başarılı sonuçlar var.
+
+**Manuel/gerçek FCM sınırı:** emulator-5554 Android 17/API 37 integration mock repository kullanır; gerçek yerel SDK/Edge testleri ayrıdır. Bu tur fiziksel telefonda görsel/FCM kabulü yapılmadı. Firebase projesi yok: public/native Firebase yapılandırmasının gerçek proje ile eşleşmesi, Android bildirim izni, gerçek token yenileme, ön plan/arka plan/kapalı uygulama push, hesap değişimi ve bildirime basma henüz kabul edilmedi. Üretim sunucu zamanlayıcısı ve gönderim işletimi kurulmadı. **Onaylı yerel Faz 14 kapsamı tamamlandı; Faz 14 bütünü tamamlanmadı.** F12/13 açıkları korunur.
+
+### Yerel bildirim geçmişini çalıştırma
+
+Yerel Supabase açık ve migration uygulanmış olmalı. Firebase olmadan da inbox üretimi test edilebilir. Bir PowerShell'de:
+
+```powershell
+npx.cmd --yes supabase@2.119.0 functions serve push-dispatch --no-verify-jwt
+```
+
+Başka bir PowerShell'de tek tur veya 15 saniyelik yerel döngü:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File supabase/tests/run-notification-worker.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File supabase/tests/run-notification-worker.ps1 -Watch
+```
+
+`-Watch` Ctrl+C ile durur. Script yalnız `127.0.0.1:55321` yerel hedefi kabul eder; CLI kimlik bilgilerini bellekte tutar, dosyaya/ekrana yazmaz. Gateway JWT doğrulaması kapalı olsa da function kendi sunucu bearer doğrulamasını yapar; anonim/Flutter çağrısı kabul edilmez. Bu döngü üretim scheduler deployment'ı değildir. Worker olmadan yeni inbox olguları kendiliğinden toplanmaz. Uygulamada Hesabım → Bildirimler → Yenile ile geçmiş okunur; Manager/Owner seçili aktif ürün/müşterilerle gerekçeli duyuru oluşturabilir. Gerçek Firebase eklenince yalnız public `.env.example` alanları build'e verilir; sunucu kimliği yalnız Edge runtime'da yapılandırılır.
+
 ## 13 Ekim 2026 — Faz 13 son doğrulama tamamlandı
 
 Kaynak başlangıcı `2f3f8da`; değişiklikler commit edilmedi. Kanıt klasörü görev başladığı günün adıyla `build/phase13-validation-20261012/`. Önceki Faz 12 fiziksel ekran/logları değiştirilmedi. Kullanıcı talebindeki reset, yerel kabul seferini ve Auth oturumlarını sentetik seed durumuna döndürdü; gerçek/cloud hedef kullanılmadı.

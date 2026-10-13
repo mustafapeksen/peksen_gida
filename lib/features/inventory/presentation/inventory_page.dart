@@ -44,7 +44,8 @@ String inventoryLabel(String value) =>
     value;
 
 class InventoryPage extends ConsumerStatefulWidget {
-  const InventoryPage({super.key});
+  const InventoryPage({super.key, this.orderId});
+  final String? orderId;
   @override
   ConsumerState<InventoryPage> createState() => _InventoryPageState();
 }
@@ -52,6 +53,20 @@ class InventoryPage extends ConsumerStatefulWidget {
 class _InventoryPageState extends ConsumerState<InventoryPage> {
   static const sections = ['stock', 'preparation', 'counts', 'movements'];
   int index = 0;
+  @override
+  void initState() {
+    super.initState();
+    if (widget.orderId != null) index = 1;
+  }
+
+  @override
+  void didUpdateWidget(covariant InventoryPage oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.orderId != widget.orderId && widget.orderId != null) {
+      index = 1;
+    }
+  }
+
   Future<void> action({
     required String title,
     required String message,
@@ -300,7 +315,19 @@ class _InventoryPageState extends ConsumerState<InventoryPage> {
                       padding: const EdgeInsets.all(12),
                       children: [
                         if (rows.isEmpty) const Text('Henüz kayıt yok.'),
-                        for (final row in rows) card(row, profile.role),
+                        if (index == 1 &&
+                            widget.orderId != null &&
+                            !rows.any((r) => r['order_id'] == widget.orderId))
+                          const Text(
+                            'Sipariş hazırlık kapsamında değil veya erişiminiz sona erdi.',
+                          ),
+                        for (final row in rows.where(
+                          (r) =>
+                              index != 1 ||
+                              widget.orderId == null ||
+                              r['order_id'] == widget.orderId,
+                        ))
+                          card(row, profile.role),
                       ],
                     ),
                   );

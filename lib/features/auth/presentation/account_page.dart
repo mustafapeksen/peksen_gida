@@ -9,6 +9,7 @@ import 'package:go_router/go_router.dart';
 
 import '../domain/account_repository.dart';
 import 'auth_providers.dart';
+import '../../../core/notifications/push_service.dart';
 import '../../products/presentation/product_providers.dart';
 import '../../inventory/presentation/inventory_page.dart' show canUseInventory;
 
@@ -48,6 +49,16 @@ class _AccountPageState extends ConsumerState<AccountPage>
       _error = null;
     });
     try {
+      // A push failure must not prevent logout. Server jobs also verify the
+      // live Auth session, and push clicks verify the current recipient.
+      try {
+        await ref
+            .read(pushServiceProvider)
+            .asData
+            ?.value
+            ?.disconnect()
+            .timeout(const Duration(seconds: 5));
+      } catch (_) {}
       final repository = await ref.read(accountRepositoryProvider.future);
       await repository?.signOut();
       ref.invalidate(accountProfileProvider);
@@ -162,6 +173,11 @@ class _AccountPageState extends ConsumerState<AccountPage>
                             icon: Icons.manage_accounts_outlined,
                             route: '/account/admin',
                           ),
+                        _AccountAction(
+                          title: 'Bildirimler',
+                          icon: Icons.notifications_outlined,
+                          route: '/account/notifications',
+                        ),
                         _AccountAction(
                           title: 'Parola değiştir',
                           icon: Icons.lock_outline,
