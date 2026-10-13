@@ -1,5 +1,19 @@
 # Pekşen Gıda ilerleme kaydı
 
+## 13 Ekim 2026 — Faz 13 onaylı yerel kapsam tamamlandı
+
+F13-01 kararları uygulandı: açık sefer/durağa atanmış primary/assistant Driver bildirimi; Customer çift onayı veya gerekçeli uyuşmazlığı; yalnız Manager/Owner gerekçeli delivered çözümü. Kesinleşme durak kapanışı, teslimat olgusu ve history/audit ile atomiktir; stok/kalem/fiyat değiştirilmez. F10 korunur: kapanan durakta Driver tahsilatı reddedilir, Sales yetkisi değişmez. Fiili Driver sipariş başına yalnız kendi Customer kullanıcısından bir kez 1–5 puan alır; puan düzenleme/silme veya Driver okuması açılmadı.
+
+Yeni `20261012000200_delivery_confirmation.sql`, `delivery_repository.dart`, `delivery_page.dart`; hesap kartı/router, `file_selector` bağımlılığı ve local Storage config'i eklendi. Private JPEG/PNG kanıt bucket'ı 5 MB sınırında; yalnız atanmış Driver yükler, yalnız yükleyen Driver ve Manager/Owner okur. Kanıt istemciye authenticated indirilir. Yeni DB, SDK/Storage, eşzamanlılık, repository/widget ve Android integration testleri vardır. Önceki migration/seed/testler değiştirilmedi. Değişen belge ve yardımcılar: AGENTS, PLAN, DECISIONS, PROGRESS, TESTING, supabase README ve mevcut local auth runner'ın test dosyası seçimi.
+
+Son doğrulamalar: pub get/analyze/debug APK **0**; Flutter **243/243 / 0** (233 eski + 10 yeni); 15 DB paketi **1.147 assertion / PASS / 0** (1.071 eski + 76 yeni); gerçek iki bağlantılı **3/3 / 0**; gerçek Auth/Storage SDK **1/1 / 0**; emulator-5554 **2/2 / 0**; diff check **0**. İlk hatalı denemeler ve düzeltmeler TESTING'dedir. Emulator testi UI/repository smoke'tur; backend kanıtı ayrıca gerçek SDK ve SQL koşularındandır. Fiziksel telefon bu tur bağlı değildi; native dosya seçimi/kanıt görüntüsü ve çift cihazlı görsel kabul yapılmadı.
+
+**Onaylanan yerel Faz 13 kapsamı tamamlandı.** Kaynaktaki failed/returned geçişleri, stok telafisi kararı olmadığı ve kullanıcı bu tur kapalı tuttuğu için uygulanmadı. Kanıt saklama/silme politikası açık; otomatik süre konmadı. Faz 12 uzun süreli GPS/izin kaldırma/fiziksel otomatik bitiş, üretim harita lisansı ve assistant devri ayrı açık kabuldür. Kullanıcı talebindeki local reset, önceki yerel GPS seferi ve oturumlarını seed durumuna döndürdü; eski screenshot/log dosyaları korunur. Son reset, SDK/concurrency fixture'larını da temizledi. Faz 14 başlatılmadı; secret, commit/push yok.
+
+## 12 Ekim 2026 — Faz 13 devam ediyor
+
+Başlangıç temiz `2f3f8da`. Kullanıcı Faz 12 temel fiziksel kabulünü kabul etti; kalan GPS/üretim harita kabulleri kapanmadı. PLAN Faz 13 ve F13-01 onaylarıyla çift onay/uyuşmazlık/yönetici çözümü, fiili Driver puanı ve özel kanıt hazırlanıyor. F10 açık durak tahsilat sınırı korunuyor. Henüz Faz 13 tamamlandı sayılmaz; doğrulama sonuçları TESTING'e eklenecek. Faz 14, secret, commit/push yok.
+
 ## 12 Ekim 2026 — Fiziksel GPS temel kabulü geçti; kalan Faz 12 kabulü açık
 
 Başlangıç temiz `e105205` (Driver UI/LAN düzeltmeleri commit edilmiş). Bu görevde uygulama, Android servis, migration/seed veya iş kuralları değiştirilmedi. Mevcut Driver oturumu korundu; reset, parola değişikliği, secret, commit/push yok. Önceki bölümdeki “aktif sefer yok” bilgisi bu hazırlık öncesinin tarihçesidir.

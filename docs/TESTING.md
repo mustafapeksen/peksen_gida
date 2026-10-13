@@ -1,5 +1,38 @@
 # Pekşen Gıda doğrulama ve test planı
 
+## 13 Ekim 2026 — Faz 13 son doğrulama tamamlandı
+
+Kaynak başlangıcı `2f3f8da`; değişiklikler commit edilmedi. Kanıt klasörü görev başladığı günün adıyla `build/phase13-validation-20261012/`. Önceki Faz 12 fiziksel ekran/logları değiştirilmedi. Kullanıcı talebindeki reset, yerel kabul seferini ve Auth oturumlarını sentetik seed durumuna döndürdü; gerçek/cloud hedef kullanılmadı.
+
+| Komut/kontrol | Sonuç | Çıkış | Kanıt |
+| --- | --- | --- | --- |
+| `flutter pub get` | Başarılı; `file_selector: 1.1.0` eklendi | 0 | `pub-get.log` |
+| `flutter analyze` | Temiz, tüm son kaynaklar dahil | 0 | `analyze-final-source.log` |
+| `flutter test test/delivery_test.dart test/delivery_repository_test.dart` | 10/10 | 0 | `flutter-delivery.log` |
+| `flutter test test/tracking_test.dart test/delivery_test.dart` | 26/26 | 0 | `flutter-ui-regression.log` |
+| `flutter test` | 243/243 (233 eski + 10 yeni) | 0 | `flutter-all-final.log` |
+| `flutter build apk --debug` | Build tamamlandı | 0 | `build-debug.log` |
+| `npx.cmd --yes supabase@2.119.0 db reset --local` | 16 migration + mevcut iki seed; Storage dahil | 0 | `db-reset-services.log`, fixture sonrası `db-reset-cleanup.log` |
+| `npx.cmd --yes supabase@2.119.0 test db --local supabase/tests/database` | 15 paket / 1.147 assertion PASS; 1.071 eski + 76 yeni | 0 | `db-all.log` |
+| `python supabase/tests/client/delivery_concurrency_test.py` | 3/3, gerçek iki bağlantı | 0 | `db-concurrency.log` |
+| `powershell -NoProfile -ExecutionPolicy Bypass -File supabase/tests/run-local-auth-check.ps1 -TestFile delivery_storage_client_test.dart` | Gerçek Auth/SDK/Storage 1/1 | 0 | `storage-sdk.log` |
+| `flutter test integration_test/delivery_smoke_test.dart -d emulator-5554` | 2/2; Driver bildirim/geri, Customer gerekçeli uyuşmazlık/klavye | 0 | `android-delivery.log` |
+| `git diff --check` | Temiz | 0 | `diff-check.log` |
+
+Korunan normal APK: `build/phase13-validation-20261012/peksen-gida-phase13-debug.apk`, **223.283.751 bayt**. Varlığından build sonucu çıkarılmadı; build komutunun bitişi/çıkış 0 kaydedildi. Integration çalıştırıcısının standart APK'yı değiştirmesinden önce bu kopya alındı.
+
+Yeni DB paketi: primary/assistant, başka müşteri/Driver/rol reddi, doğrudan yazma reddi, tek Driver olgusunun borç üretmemesi, Customer çift onayı, gerekçeli uyuşmazlık/Owner çözümü, audit hatasında order/stop/event rollback, aynı aktör/anahtar replay ve farklı payload reddi; kapalı durakta Driver tahsilat reddi, fiili assistant'a tek puan, stok/kalem/fiyatların korunması. Mevcut GPS trigger'ı out_for_delivery sona erdiğinde son noktayı siler; bu SQL kanıtı fiziksel otomatik servis durma kabulü değildir. Normal teslimatta yeni vade veya formül oluşturulmaz.
+
+Gerçek SDK testi: Driver → Customer dispute → Manager resolution → Customer rating; gerçek PNG Storage yükleme, Driver/Manager authenticated download, Customer/Accounting/anon ret, upsert/delete kapalı, 5 MB üstü/MIME reddi ve kapatılmış durakta upload/tahsilat reddi. Kullanıcı parolası/token/servis anahtarı dosyaya basılmadı; eski sentetik hash'ler finally içinde geri yüklendi. Concurrency: aynı Driver isteği tek kayıt, Customer/Manager yarışında tek final/history, iki puan isteğinde tek puan.
+
+İlk denemeler başarı sayılmadı: analyze 1 (eksik parantez, ardından lint); yeni DB testi 1 (test CTE sözdizimi, ardından Storage'ın kendi direct-delete koruması); tam Flutter 242 başarılı/1 hatalı (yeni hesap kartı Driver kartlarını aşağı itti). Üretim davranışını koruyarak düzeltildi: tracking/dispatch kart sırası korundu; eski testler zayıflatılmadı. Supabase başlatma kesintisi created/starting DB durumunda 1 verdi; sağlıklı runtime stop/start sonrasında tüm gereken servislerle 0. Son başarılı kontroller tabloda ayrı kayıtlıdır.
+
+Manuel sınırlar: Android integration mock repository kullanır; gerçek backend kanıtı ayrıca masaüstü SDK+local Storage koşusundandır. Fiziksel telefonda native dosya seçici, kanıt görseli, çift cihazlı teslimat ve son kullanıcı görsel kabulü bu tur yapılmadı. Faz 12 uzun süreli GPS/izin kaldırma/otomatik teslimat sonu fiziksel durma, üretim harita lisansı ve assistant GPS devri açık kalır. Kanıt saklama/silme politikası, failed/returned/telafi ayrıca karar bekler.
+
+## 12 Ekim 2026 — Faz 13 doğrulama kaydı (devam ediyor)
+
+Kanıt klasörü `build/phase13-validation-20261012/`. İlk `flutter pub get` çıkış 0. İlk analyze eksik parantez nedeniyle 1; düzeltildi, son koşu bekliyor. Bekleyen kontroller geçmiş faz başarılarından türetilmez. Yerel Storage etkinleştirildi; kullanıcı talebindeki local reset kabul verisini yeniden kurar. Faz 12 fiziksel ekran/log dosyaları korunur.
+
 ## 12 Ekim 2026 — Gerçek cihaz GPS: hazırlık ve ölçülmüş kabul
 
 Hedef **R5CW30NE8ZV / SM-S918B / Android 16 API 36**, mevcut LAN config ve Driver oturumu. Kaynak `e105205`. Kanıt klasörü `build/phase12-physical-gps-20261012/`; önceki görüntüler korunur. Aşağıdaki fiziksel gözlemler emülatör/mock başarısından çıkarılmadı. Gerçek koordinatlar dokümana/komut çıktısına yazılmadı; yalnız varlık, durum ve zaman izlendi.

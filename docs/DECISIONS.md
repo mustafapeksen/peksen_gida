@@ -1,5 +1,19 @@
 # Pekşen Gıda — Karar kaydı
 
+## F13-01 — 12 Ekim 2026 onaylı teslimat ve puanlama
+
+**13 Ekim kapanışı:** Bu onayların yerel kapsamı 76 yeni DB assertion, 3 gerçek eşzamanlılık, gerçek Storage SDK ve Android smoke ile doğrulandı. Tam Flutter 243/243 ve eski 1.071 DB assertion korunur. Son komut/çıkışlar TESTING'dedir. Faz 14 açılmadı. Kanıt saklama/silme süresi ile failed/returned telafi sözleşmesi açık kalır; fiziksel dosya seçici/kanıt görseli ve F12 açık kabulleri bu testlerden türetilmez.
+
+- PLAN Faz 13: çift onay, uyuşmazlık, yönetici çözümü, tek puan ve kontrollü kanıt.
+- Açık sefer/durağa atanmış primary/assistant Driver `out_for_delivery → delivery_pending_confirmation`; kendi Customer kullanıcısı `Teslim aldım → delivered` veya gerekçeli `Teslim almadım → delivery_disputed` yapar.
+- Manager/Owner yalnız bu iki bekleyen durumda gerekçeyle `delivered` çözümü verir. Kesinleşmede durak kapanır; teslimat olgusu, history/audit aynı transaction'dadır. Tek Driver olgusu borç üretmez; mevcut F10 hesapları kullanılır.
+- **Ek kullanıcı kararı:** F10 açık-durak tahsilat sınırı korunur. Durak kapanınca Driver tahsilatı kapanır; Sales mevcut aktif atanmış müşteri sınırında tahsilata devam eder. Finance scope genişletilmez.
+- Puan hedefi teslimat onayını fiilen başlatan primary/assistant Driver'dır. Yalnız kendi Customer kullanıcısı, kesinleşmiş delivered siparişte bir kez 1–5 puan; isteğe bağlı yorum ve geç geldi/davranış/ürün eksikliği/hasar/diğer nedenleri. Değiştirme/silme ve Driver puan okuması kapalı.
+- Kanıt yalnız uyuşmazlıkta atanmış Driver için isteğe bağlı JPEG/PNG, en çok 5 MB; private Storage. Yalnız yükleyen Driver ve Manager/Owner okur. Customer/diğer roller ve dosya değiştirme/silme kapalı. Uygulama authenticated download kullanır. Saklama süresi/otomatik temizleme açık karardır; süre uydurulmaz.
+- Failed/returned, gerçek revizyon, stok telafisi, tahsilat düzeltme/iptal ve çeyrek kuralları uygulanmaz. Faz 14 açılmaz. F12 uzun süreli GPS, izin/GPS kaldırma, fiziksel otomatik durma, üretim harita lisansı ve assistant kaynak devri açık kalır.
+- Teknik: aynı aktör+anahtar+payload cevabı tekrar döner; farklı payload/aktör reddedilir. Kanıt rezervasyonu ile Storage upload ayrı işlemlerdir; dosya gönderilmediyse boş rezervasyon kanıt olarak gösterilmez. Offline kritik işlem kuyruğu yok; belirsiz RPC sonucu şifreli, aktör/proje ayrımlı istekle açık tekrar edilir.
+- Dosya seçimi [Flutter file_selector](https://pub.dev/packages/file_selector), özel bucket sınırları [Supabase Storage](https://supabase.com/docs/guides/storage/buckets/fundamentals) sözleşmesini izler.
+
 ## F12-01 — 11 Ekim 2026 onayı; 12 Ekim doğrulama devamı
 
 **12 Ekim fiziksel kabul hazırlığı:** Kullanıcı yerel fixture ile aktif primary sefer hazırlanmasını onayladı. Sabit yerel Docker DB'de yalnız mevcut authenticated Warehouse/Manager RPC'leri kullanıldı; telefondaki Driver gerçek oturumuyla yola çıkıldı. Auth/parola/seed/migration veya üretim yetkileri değiştirilmedi. Temel fiziksel izin/son nokta, 40 saniye ekran kapalı ve 25 saniye LAN kesintisi geçti; uzun süreli ve teslimat sonu kabulü bunlardan türetilmez. Test bitiminde kullanıcı durdurma akışıyla konum temizlenip servis kapatıldı; test seferi ve Driver oturumu korunur. Ayrıntılı kanıt TESTING başındadır. Yeni ticari karar yok.

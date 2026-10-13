@@ -1,4 +1,4 @@
-param([ValidateSet('auth_session_test.dart','account_onboarding_client_test.dart','tracking_realtime_test.dart')][string]$TestFile='auth_session_test.dart')
+param([ValidateSet('auth_session_test.dart','account_onboarding_client_test.dart','tracking_realtime_test.dart','delivery_storage_client_test.dart')][string]$TestFile='auth_session_test.dart')
 # Only the disposable local Phase 3/4 project. No cloud target or real account.
 # Run from the repository root after db reset and pgTAP checks.
 $ErrorActionPreference = 'Stop'

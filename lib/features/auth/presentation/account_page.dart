@@ -1,5 +1,6 @@
 import '../../finance/presentation/finance_page.dart' show canUseFinance;
 import '../../delivery/presentation/dispatch_page.dart' show canUseDispatch;
+import '../../delivery/presentation/delivery_page.dart' show canUseDelivery;
 import '../../tracking/presentation/tracking_providers.dart';
 
 import 'package:flutter/material.dart';
@@ -109,6 +110,13 @@ class _AccountPageState extends ConsumerState<AccountPage>
                             icon: Icons.local_shipping_outlined,
                             route: '/account/dispatch',
                             description: 'Sefer, ekip ve durak bilgilerini görüntüleyin.',
+                          ),
+                        if (canUseDelivery(value.role))
+                          _AccountAction(
+                            title: 'Teslimat ve puanlama',
+                            icon: Icons.task_alt,
+                            route: '/account/deliveries',
+                            description: 'Teslimat onayı, uyuşmazlık ve puanlama işlemleri.',
                           ),
                         if (canReadProducts(value.role))
                           _AccountAction(

@@ -1,5 +1,6 @@
 import '../../features/finance/presentation/finance_page.dart';
 import '../../features/delivery/presentation/dispatch_page.dart';
+import '../../features/delivery/presentation/delivery_page.dart';
 import '../../features/tracking/presentation/tracking_page.dart';
 
 import 'package:flutter/foundation.dart';
@@ -82,6 +83,10 @@ GoRouter createAppRouter({
         path: '/account',
         builder: (context, state) => const AccountPage(),
         routes: [
+          GoRoute(
+            path: 'deliveries',
+            builder: (context, state) => const DeliveryPage(),
+          ),
           GoRoute(
             path: 'tracking',
             builder: (context, state) => const TrackingPage(),
