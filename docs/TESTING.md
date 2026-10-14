@@ -1,5 +1,31 @@
 # Pekşen Gıda doğrulama ve test planı
 
+## 14 Ekim 2026 — Faz 17 release hazırlığı doğrulaması
+
+Başlangıç temiz `44d46a7`; F17-01 gereği yalnız hazırlık. Kanıt dizini `build/phase17-validation-20261014/`. Gerçek keystore/HTTPS kabul ortamı yok; signed release veya gerçek release cihaz kabulü denenmiş sayılmaz. Flutter/platform iş akışları, önceki migration/seed/testler korunur.
+
+| Komut / kontrol | Sonuç | Çıkış | Log |
+| --- | --- | --- | --- |
+| `flutter pub get` | Başarılı, paket değişmedi | 0 | `pub-get.log` |
+| `flutter analyze` | Temiz | 0 | `analyze.log` |
+| `flutter test` | 288/288 | 0 | `flutter-all.log` |
+| `flutter build apk --debug` | Yeni Gradle yapılandırmasıyla normal debug APK başarılı | 0 | `build-debug.log` |
+| `python android/tests/release_signing_test.py` | Gerçek Gradle görevlerinde dört negatif imzalama senaryosu 4/4 | 0 | `release-signing-test.log` |
+| `python build/phase17-validation-20261014/run_db_socket.py` | Belgelenmiş Faz 16 Docker içi psql/TAP akışı; 18 paket, 1.351 assertion PASS | 0 | `db-socket-all.log`, `socket-*.log` |
+| `flutter test integration_test/app_smoke_test.dart -d emulator-5554 --no-uninstall` | Gerçek Android debug açılış, rol menüsü, önizleme/geri akışı 1/1 | 0 | `android-smoke.log` |
+| `adb -s emulator-5554 install -r build/phase17-validation-20261014/peksen-gida-phase17-debug.apk` | Testten sonra normal APK geri yüklendi; firstInstallTime değişmedi | 0 | `emulator-restore.log`, `emulator-before-metadata.log`, `emulator-after-metadata.log` |
+| `git diff --check` | Temiz | 0 | `diff-check.log` |
+
+İmzalama testleri mevcut ortamın imzalama değişkenlerini yalnız test alt sürecinde temizler; yeni gerçek anahtar üretmez, parola/anahtar okumaz. Eksik bilgiler `:app:preReleaseBuild` üzerinden reddedilerek release görevine bağlantı sınanır; kısmi bilgiler, depo içi yol ve debug alias'ı `:app:validateReleaseSigning` üzerinden reddedilir. Alt Gradle süreçlerinin beklenen hata çıkışları test başarısıdır; başarılı imzalı build değildir. Debug alias testi yalnız geçici düz metin placeholder kullanır; keystore oluşturmaz. Test ayrıca sentetik parola işaretçisinin Gradle tanılamasına sızmadığını doğrular. Windows'ta `JAVA_HOME` Android Studio JBR'ye ayarlanarak çalıştırılır; oturumun önceki değeri koşu sonunda geri kondu.
+
+Normal APK kopyası: `build/phase17-validation-20261014/peksen-gida-phase17-debug.apk`, **223.428.222 bayt**. Integration çıktısı normal APK kopyası yerine geçirilmez. Build'deki mevcut Java native-access/Kotlin plugin geçiş uyarıları hata değildir; sürüm yükseltme veya paket değişikliği bu tur yapılmadı.
+
+DB container sağlıklı, host portları önceki durumdaki gibi yayınlanmıyordu. User'ın izin verdiği belgelenmiş başarılı DB akışı seçildi; local reset veya port değişikliği yapılmadı. Faz 16 socket runner'ı bu turun kanıt dizinine uyarlanarak aynı SQL dosyalarının süreç çıkışı, TAP planı/sıra/sayı ve hata yokluğu denetlendi. Faz 17 yeni DB kuralı/testi gerektirmedi; identity **19**, business **140**, güvenlik **21** dahil mevcut 18 paket geçti. Bu sonuç host CLI erişimi düzeldi demek değildir.
+
+Emülatörde başlangıçta paket bulunmadı (`pm path` çıkış 1); ilk yedek hazırlığı bu nedenle durdu ve uygulama kaldırılmadı. Bu turun normal debug APK'sı kurularak taban durum oluşturuldu. Sonraki integration `--no-uninstall` ile çalıştı, sonunda aynı imzalı normal APK `install -r` ile geri yüklendi; ilk kurulum zamanı aynı kaldı. Eski bir emülatör oturumunun korunması iddia edilmez. Bağlı fiziksel `R5CW30NE8ZV` cihazına hiçbir kurulum/test/reset uygulanmadı; mevcut verisi/oturumu bu tur hedeflenmedi.
+
+**Yapılmayanlar:** Gerçek anahtar/sertifika/parola ile imzalama; signed release build ve APK sertifika doğrulaması; gerçek HTTPS ortamında cihaz kurulum/güncelleme, oturum, sipariş, GPS, push kabulü; üretim yedek/geri yükleme denemesi. Release manifest HTTP reddi kaynak düzeyinde eklendi, imzalı son artefakt kabulü yapılmadı. Debug smoke release davranışı kanıtı değildir. Önceki fiziksel GPS, harita/lisans, kanıt seçici, Firebase/FCM ve ticari açıklar kapanmadı. **Faz 17 hazırlığı doğrulandı; fazın bütünü tamamlanmadı.** Sonraki somut adım kalıcı kimlik/sürüm, anahtar sahipliği/saklama ve HTTPS kabul ortamını hazırlayıp RELEASE.md'deki pozitif imza/cihaz kontrol listesini uygulamaktır; yeni yetki olmadan yayın yapılmaz.
+
 ## 14 Ekim 2026 — Faz 16 uçtan uca / güvenlik / fiziksel smoke
 
 Başlangıç temiz `a354f39`. Kanıt dizini çalışma başlangıcının adıyla `build/phase16-validation-20261013/`; önceki başarılı uzun koşular kapanışta tekrarlanmadı. Aşağıdaki ilk koşular bu Faz 16 çalışmasında, son Sales/analyze/socket kontrolleri devam oturumunda yapıldı. İş kodu, migration, seed veya paket sürümü değişmedi.

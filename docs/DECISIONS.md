@@ -1,5 +1,17 @@
 # Pekşen Gıda — Karar kaydı
 
+## F17-01 — 14 Ekim 2026 Android release hazırlığı
+
+Kullanıcı `44d46a7` Faz 16 yerel + seçili fiziksel Android smoke kapsamını kabul etti; Faz 16 bütününü tamamlandı saymadı. PLAN Faz 17 imzalama/sürüm, Android release APK ve gerçek cihaz/kurulum/yedekleme yönergeleridir. Önceki iş kuralları veya açık ticari akışlar genişletilmez.
+
+Onaylanan cevaplar: **kimlik/sürüm şimdilik kalır, yalnız hazırlık**; **anahtar yok, altyapı hazırlanır**; **HTTPS backend/üretim harita/Firebase hazır değil, release kabulü açık kalır**. `com.example.peksen_gida` / `0.1.0+1` bu tur değiştirilmez, yayın onayı sayılmaz. Yeni anahtar/parola üretilmez veya dosyaya yazılmaz.
+
+Gradle `PEKSEN_ANDROID_KEYSTORE`, `PEKSEN_ANDROID_KEYSTORE_PASSWORD`, `PEKSEN_ANDROID_KEY_ALIAS`, `PEKSEN_ANDROID_KEY_PASSWORD` süreç ortamından imza bilgisi alır; bunlar Dart define/public config değildir. Eksik yapılandırma release ön görevini durdurur; debug fallback yoktur. Anahtar mevcut mutlak yol ile depo dışında olmalıdır. Debug alias/dosya adı reddi koruyucu kontroldür; gerçek imza sahibinin sertifika parmak iziyle son APK doğrulaması ayrıca gereklidir. Release manifestinde cleartext kapalıdır; LAN istisnası debug'da kalır. Debug/preview/auth/RLS ve iş servisleri değişmez.
+
+Kurulum, imza uyuşmazlığında durma, `--no-uninstall`, APK ile veri/Keystore yedeği ayrımı ve backend/Storage yedek sorumlulukları [RELEASE.md](RELEASE.md) içindedir. Bu tur canlı ortam, yedek alma/geri yükleme veya dağıtım işlemi yapılmaz. Yedek saklama süresi/RPO/RTO ve anahtar sahipliği/saklama sorumlusu açık işletim kararlarıdır; otomatik politika uydurulmadı.
+
+**Açık:** kalıcı applicationId ve release sürümü, gerçek keystore/sertifika, HTTPS kabul ortamı, üretim harita/lisans ve Firebase; imzalı release derleme ve gerçek cihaz kurulum/güncelleme/oturum/sipariş/bildirim/GPS kabulü. Faz 12–16 açık kabulleri ayrı durur. Failed/returned, stok telafisi, gerçek kalem revizyonu, tahsilat düzeltme/iptal ve diğer açık iş kuralları bu tur uygulanmaz. Faz 17 hazırlığı bütün fazın tamamlandığı veya yayın izni anlamına gelmez.
+
 ## F16-01 — 13–14 Ekim 2026 uçtan uca test ve güvenlik incelemesi
 
 Kullanıcı `a354f39` Faz 15 yerel kapsamını kabul etti. Kapsam yalnız PLAN Faz 16: yedi rol senaryosu, fiyat/stok/tahsilat yarışları, RLS ve dosya erişimi; yeni formül veya iş geçişi yoktur. Telefon bağlama sorusuna kullanıcı fiziksel cihazı bağlayacağını belirtti; `R5CW30NE8ZV` görüldü. Test APK'sından önce kurulu APK saklandı ve sonrasında geri yüklendi; SHA-256 eşleşmesi doğrulandı. Ancak bu koşularda Flutter'ın varsayılan test-sonu uninstall davranışı kapatılmadığından **yerel uygulama verisi/oturum korunamadı**: kurulum tarihi yenilendi, `shared_prefs` yok. APK yedeği veri/Android Keystore yedeği değildir; yeniden giriş gerekir. Bundan sonraki fiziksel integration komutları `--no-uninstall` kullanmalı ve aynı imzalı APK `adb install -r` ile geri yüklenmelidir. Yerel DB resetleri ayrıca sentetik fixture'ları/oturumları yeniler.

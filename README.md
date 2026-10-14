@@ -1,5 +1,7 @@
 # Pekşen Gıda
 
+**Faz 17 hazırlığı — 14 Ekim 2026:** Ortamdan release imzalama ve kurulum/sürüm/yedekleme [yönergeleri](docs/RELEASE.md) hazır. Gerçek anahtar ve HTTPS kabul ortamı yok; imzalı release APK veya üretim kabulü tamamlanmadı. Geliştirme kimliği/sürümü korunur. Son komut sonuçları [TESTING](docs/TESTING.md) içindedir; önceki açık kabuller ayrı kalır.
+
 **Faz 15 — 13 Ekim 2026:** Gerçek Manager/Owner oturumunda Hesabım → Operasyon raporları; yalnız Owner için Maaş ve prim / Audit kayıtları eklendi. Rapor tarihleri İstanbul gün sınırlarına göre, stok anlık, sürücü puanları tüm zamanlardır. Maaş/prim manuel aylık kayıt olup bordro veya ödeme üretmez; düzeltme gerekçe ve güncel sürüm ister. On sekizinci migration gerekir. Yerel kabul ve komutlar [TESTING](docs/TESTING.md), onaylı sınırlar [DECISIONS](docs/DECISIONS.md) içindedir. Faz 12–14 fiziksel/üretim açıkları korunur; Firebase olmadığından gerçek push kabulü açık kalır. Aşağıdaki faz durumları tarihçedir.
 
 **Faz 7:** Sales Operator hesabında “Müşteri adına sipariş” yalnız atanmış aktif müşterileri listeler. Seçilen müşterinin adı ortak katalog/sepet ekranının üstünde görünür. Müşteriden çıkarken kaydedilmemiş sepet temizlenir; sunucu taslağı ve bekleyen gönderim müşteriye/aktöre özeldir. Oluşturucu olmak tek başına erişim sağlamaz. Customer akışı ve Faz 6 hesapları korunur; son kabul [TESTING](docs/TESTING.md), yetki değişikliği F7-01'dedir.
@@ -108,7 +110,7 @@ Yollar: `/` giriş, `/login` aynı girişe yönlenen alias, `/preview` önizleme
 
 `test/app_test.dart`, kaynak menü envanterini, önizleme erişim sınırını, 70 ekran bağlantısını, Android sistem geri davranışını, geçersiz yolları ve küçük ekranda büyük yazı/klavyeyle erişimi sınar. `integration_test/app_smoke_test.dart` Android üzerinde giriş → önizleme → Depo → ürün ekran kabuğu, geri dönüş ve boş liste akışını çalıştırır. Otomatik testler tüm cihazlarda görsel kabul anlamına gelmez; kapsam TESTING'de, sonuçlar PROGRESS'tedir.
 
-Release imzalama henüz yapılandırılmadı; şablondaki debug anahtarıyla release imzalama kaldırıldı. İmzalı yayın hazırlığı Faz 17'nin görevidir.
+Faz 17 release imzalama altyapısı süreç ortamından dış keystore okuyacak şekilde hazırlandı; eksik yapılandırma release derlemesini durdurur, debug imzası kullanılmaz. Gerçek anahtar, HTTPS kabul ortamı ve kalıcı yayın kimliği henüz hazır değildir; imzalı APK/gerçek release kabulü yapılmadı. Sürüm, güvenli kurulum ve yedekleme adımları [RELEASE](docs/RELEASE.md), son doğrulamalar [TESTING](docs/TESTING.md) içindedir. Mevcut geliştirme kimliği ve `0.1.0+1` korunur.
 
 ## Ortam değişkenleri
 

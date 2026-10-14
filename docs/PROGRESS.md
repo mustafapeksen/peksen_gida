@@ -1,5 +1,15 @@
 # Pekşen Gıda ilerleme kaydı
 
+## 14 Ekim 2026 — Faz 17 hazırlığı tamamlandı; release kabulü bekliyor
+
+Başlangıç temiz `44d46a7`. PLAN kapsamı Android release APK, imzalama/sürüm, gerçek cihaz kabulü ve kurulum/yedekleme yönergeleridir. Kullanıcı F17-01 ile yalnız hazırlığı onayladı: geliştirme kimliği/sürümü korunur, anahtar üretilmez, HTTPS ortamı/harita/Firebase hazır olmadığından gerçek release kabulü açık kalır.
+
+Android Gradle dış süreç ortamından release imzalama bilgisi alır; eksik/kısmi yapılandırma, depo içi anahtar yolu ve debug alias'ı reddedilir. Release manifestinde HTTP kapalıdır, debug LAN fixi korunur. `docs/RELEASE.md` sürüm, imza doğrulama, aynı imzayla kurulum, `--no-uninstall`, APK/veri/Keystore ayrımı ve DB/Storage yedekleme yönergelerini içerir. Uygulama iş kodu, pubspec/lock, migration, seed ve DB testleri değiştirilmedi.
+
+Yeni gerçek Gradle negatif testleri **4/4 / 0**; pub get/analyze/debug build **0**; Flutter **288/288 / 0**. Belgelenmiş Docker içi DB akışı **18 paket / 1.351 assertion / 0**; reset yapılmadı. Emulator-5554 debug açılış/önizleme **1/1 / 0**, `--no-uninstall` kullanıldı ve normal debug APK `install -r` ile geri yüklendi (**0**); ilk kurulum zamanı değişmedi. Fiziksel telefona dokunulmadı. Son `git diff --check` temiz; ayrıntılar TESTING başındadır.
+
+**Faz 17 tamamlanmadı.** Hazırlık uygulanmış ve doğrulanmıştır; gerçek keystore ile pozitif imzalama, imzalı APK, kalıcı paket/sürüm, HTTPS ortamı ve gerçek release cihaz kurulum/güncelleme/oturum/sipariş/bildirim/GPS kabulleri bekler. Faz 16 bütünü ve önceki GPS/harita/kanıt/FCM açıkları kapatılmadı. İlgisiz failed/returned/telafi/revizyon/tahsilat düzeltme kuralları açılmadı. Secret, anahtar üretimi, commit/push veya yayın yok.
+
 ## 14 Ekim 2026 — Faz 16 yerel test ve fiziksel smoke kapanışı
 
 Başlangıç temiz `a354f39`; PLAN kapsamı yalnız uçtan uca test + güvenlik incelemesi. Yeni iş kuralı, uygulama kodu, migration veya seed değişikliği yok. Yedi gerçek Auth oturumuyla Customer checkout → Warehouse toplama/yükleme → Manager sefer atama → Driver/Customer teslimat → Sales tahsilat → Accounting doğrulama → Manager rapor/Owner maaş zinciri ve yetki reddi **1/1 / 0** geçti. Yeni güvenlik paketi **21/21 / 0**; tüm **18 DB paketi / 1.351 assertion / 0**, son toplu koşu Docker içi psql/TAP denetimiyle geçti. Host 55322 portu yayınlanmadığı için son CLI toplu test denemeleri **1** verdi; bunlar başarı sayılmaz.
