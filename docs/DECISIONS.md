@@ -1,5 +1,13 @@
 # Pekşen Gıda — Karar kaydı
 
+## F16-01 — 13–14 Ekim 2026 uçtan uca test ve güvenlik incelemesi
+
+Kullanıcı `a354f39` Faz 15 yerel kapsamını kabul etti. Kapsam yalnız PLAN Faz 16: yedi rol senaryosu, fiyat/stok/tahsilat yarışları, RLS ve dosya erişimi; yeni formül veya iş geçişi yoktur. Telefon bağlama sorusuna kullanıcı fiziksel cihazı bağlayacağını belirtti; `R5CW30NE8ZV` görüldü. Test APK'sından önce kurulu APK saklandı ve sonrasında geri yüklendi; SHA-256 eşleşmesi doğrulandı. Ancak bu koşularda Flutter'ın varsayılan test-sonu uninstall davranışı kapatılmadığından **yerel uygulama verisi/oturum korunamadı**: kurulum tarihi yenilendi, `shared_prefs` yok. APK yedeği veri/Android Keystore yedeği değildir; yeniden giriş gerekir. Bundan sonraki fiziksel integration komutları `--no-uninstall` kullanmalı ve aynı imzalı APK `adb install -r` ile geri yüklenmelidir. Yerel DB resetleri ayrıca sentetik fixture'ları/oturumları yeniler.
+
+Yedi rol gerçek Auth/PostgREST zinciri, API dışından status/finans yazma kestirmesi olmadan mevcut servisleri kullanır. Android ekran senaryoları mock repository ile ayrı çalışır; bunlar gerçek Firebase, GPS veya dosya seçici kabulü değildir. Yerel SQL testleri, önceki gerçek Storage erişim kanıtı ve kaynak/config incelemesi birbirinden ayrı kaydedilir. Fiyat yarışında test yardımcısının Docker metin taşıması UTF-8 olarak sabitlendi; iş kodu/fiyat sözleşmesi değişmedi. Sales testinde koşulsuz ensureVisible yerine klavye açıkken gerçek hit-test ve sınırlı kaydırma kullanıldı; fiyat yeniden onayı/gönderim/geri gezinme doğrulamaları korunur.
+
+**Açık kabul:** PLAN'ın tüm ilgili kabullerin kapanması önkoşulu halen karşılanmıyor: önceki uzun süreli GPS/üretim harita/assistant devri/otomatik fiziksel bitiş, fiziksel kanıt seçici/görseli ve gerçek Firebase/FCM kabulleri ayrı açık kalır. Failed/returned, stok telafisi, gerçek kalem revizyonu, tahsilat düzeltme/iptal, otomatik bordro/ödeme ve ayar yazma kapsamı genişletilmez. Yerel testlerin geçmesi üretim güvenlik sertifikası veya bu açık maddelerin kabulü değildir. Faz 17 başlatılmaz.
+
 ## F15-01 — 13 Ekim 2026 onaylı Manager/Owner raporları
 
 - Kullanıcı Faz 14 yerel kapsamını `4a61a11` ile kabul edip yalnız PLAN Faz 15'i açtı. Manager/Owner rapor okur; diğer rollerin rapor erişimi yoktur.

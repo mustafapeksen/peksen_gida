@@ -1,5 +1,17 @@
 # Pekşen Gıda ilerleme kaydı
 
+## 14 Ekim 2026 — Faz 16 yerel test ve fiziksel smoke kapanışı
+
+Başlangıç temiz `a354f39`; PLAN kapsamı yalnız uçtan uca test + güvenlik incelemesi. Yeni iş kuralı, uygulama kodu, migration veya seed değişikliği yok. Yedi gerçek Auth oturumuyla Customer checkout → Warehouse toplama/yükleme → Manager sefer atama → Driver/Customer teslimat → Sales tahsilat → Accounting doğrulama → Manager rapor/Owner maaş zinciri ve yetki reddi **1/1 / 0** geçti. Yeni güvenlik paketi **21/21 / 0**; tüm **18 DB paketi / 1.351 assertion / 0**, son toplu koşu Docker içi psql/TAP denetimiyle geçti. Host 55322 portu yayınlanmadığı için son CLI toplu test denemeleri **1** verdi; bunlar başarı sayılmaz.
+
+İki gerçek bağlantıyla fiyat 3, stok 4, tahsilat 3, sefer 6, teslimat 3, maaş 3: **22/22 / 0**. Kaynak/config kontrolü **4/4 / 0**. İncelenen RLS, anonim/ham yazma, sahte JWT rolü, Owner-only maaş, private kanıt ve debug-only HTTP/preview sınırlarında engelleyici güvenlik bulgusu saptanmadı. Bu sonuç bağımsız sızma testi veya üretim güvenlik garantisi değildir.
+
+Pub get/analyze/debug build **0**, tam Flutter **288/288 / 0**. İlk fiziksel koşu **14 başarılı / 1 hatalı**; Sales klavye/kaydırma test yardımcısı düzeltildi. Son ilgili widget **13/13 / 0**, analyze **0**, fiziksel Sales **1/1 / 0**: iki koşunun birleşik kapsamı **15/15**. Tam 15'li paket yeniden başarılı çalışmış gibi raporlanmaz. Android mock repository, gerçek backend SDK/DB kanıtından ayrıdır; manuel bütün ekran incelemesi yapılmadı.
+
+Telefon `R5CW30NE8ZV` eski APK'sı her koşu sonunda geri yüklendi; son SHA-256 eşleşti. **Veri koruma eksikliği:** Flutter testin varsayılan uninstall davranışı kapatılmadığı için uygulama verisi/oturum korunamadı; `shared_prefs` yok ve kurulum tarihi yenilendi. Yeniden giriş gerekir; APK yedeğinden oturum geri getirildiği iddia edilmez. Bundan sonraki fiziksel testler `--no-uninstall` kullanır. Ayrıntılı kanıtlar TESTING başındadır.
+
+Değişenler: yeni security DB, seven-role SDK, price race, source security testleri ve birleşik Android smoke; ortak yarış yardımcısında UTF-8, local Auth runner izin listesi, Sales test yardımcısı; AGENTS, PLAN, DECISIONS, PROGRESS, TESTING. **Faz 16'nın yerel testleri ve seçilen fiziksel smoke senaryoları tamamlandı; Faz 16 bütünü tamamlanmadı.** Veri/oturumun yeniden kurulması, host CLI erişimi ve önceki uzun süreli GPS/üretim harita, fiziksel kanıt seçici, gerçek Firebase/FCM kabulleri açık. Failed/returned, stok telafisi, gerçek kalem revizyonu, tahsilat düzeltme/iptal ve diğer açık kurallar uygulanmadı. Faz 17, secret, commit/push yok.
+
 ## 13 Ekim 2026 — Faz 15 onaylı kapsam tamamlandı
 
 Başlangıç temiz `4a61a11`; kullanıcı Faz 14 yerel kapsamını kabul etti. PLAN Faz 15 **Manager + Owner + reports** ve onaylı F15-01 uygulandı. Manager/Owner İstanbul tarih aralığında sipariş durum sayılarını, kesinleşmiş teslimat adet/toplamını, ayrı recorded/verified tahsilat toplamlarını; anlık stok ve tüm zamanların sürücü puan dağılımını okur. Hesabım kartları ve gerçek oturum gerektiren rapor rotaları eklendi; preview ve Faz 6–14 akışları korundu.

@@ -1,5 +1,55 @@
 # Pekşen Gıda doğrulama ve test planı
 
+## 14 Ekim 2026 — Faz 16 uçtan uca / güvenlik / fiziksel smoke
+
+Başlangıç temiz `a354f39`. Kanıt dizini çalışma başlangıcının adıyla `build/phase16-validation-20261013/`; önceki başarılı uzun koşular kapanışta tekrarlanmadı. Aşağıdaki ilk koşular bu Faz 16 çalışmasında, son Sales/analyze/socket kontrolleri devam oturumunda yapıldı. İş kodu, migration, seed veya paket sürümü değişmedi.
+
+| Komut / kontrol | Sonuç | Çıkış | Kanıt dosyası |
+| --- | --- | --- | --- |
+| `flutter pub get` | Başarılı | 0 | `pub-get.log` |
+| `flutter analyze` | Son test yardımcısı dahil temiz | 0 | `analyze-final.log`; önceki `analyze.log` |
+| `flutter test` | 288/288; son Sales yardımcısı öncesindeki tam koşu | 0 | `flutter-all.log` |
+| `flutter test test/sales_checkout_test.dart` | Son yardımcısıyla 13/13; fiyat yeniden onay ve müşteri ayrımı korunur | 0 | `flutter-sales-verified.log` |
+| `flutter build apk --debug` | Normal APK derlendi; uygulama kodu sonra değişmedi | 0 | `build-debug.log` |
+| `npx.cmd --yes supabase@2.119.0 db reset --local` | Migration/seed ve yarış fixture temizliği başarılı | 0 | `db-reset.log`, `reset-before-db-all.log`, yarış başına `reset-before-*.log` |
+| `npx.cmd --yes supabase@2.119.0 test db --local supabase/tests/database/security_surface_test.sql` | Yeni güvenlik paketi 21/21 PASS | 0 | `db-security.log` |
+| `npx.cmd --yes supabase@2.119.0 test db --local supabase/tests/database` | Son iki deneme: `ECONNREFUSED 127.0.0.1:55322`; başarılı sayılmadı | 1 | `db-all.log`, `db-all-final.log` |
+| `python build/phase16-validation-20261013/run_db_socket.py` | Aynı 18 SQL dosyası Docker içi psql üzerinden 1.351/1.351 PASS | 0 | `db-socket-all.log`, `socket-*.log` |
+| `powershell -NoProfile -ExecutionPolicy Bypass -File supabase/tests/run-local-auth-check.ps1 -TestFile seven_role_e2e_test.dart` | Gerçek Auth/PostgREST yedi rol zinciri 1/1 | 0 | `seven-role-sdk.log` |
+| `python supabase/tests/client/price_concurrency_test.py` | Fiyat/checkout ve stale price yarışı 3/3 | 0 | `price-race.log` |
+| `python supabase/tests/client/inventory_concurrency_test.py` | Stok 4/4 | 0 | `inventory-race.log` |
+| `python supabase/tests/client/finance_concurrency_test.py` | Tahsilat/tekrar/cari onay 3/3 | 0 | `finance-race.log` |
+| `python supabase/tests/client/dispatch_concurrency_test.py` | Araç/Driver/atama/yükleme/yola çıkış 6/6 | 0 | `dispatch-race.log` |
+| `python supabase/tests/client/delivery_concurrency_test.py` | Teslimat/karar/puan yarışları 3/3 | 0 | `delivery-race.log` |
+| `python supabase/tests/client/salary_concurrency_test.py` | Maaş oluşturma/düzeltme/tekrar 3/3 | 0 | `salary-race.log` |
+| `python supabase/tests/client/source_security_check.py` | Kaynak/config dar kapsamlı 4/4 | 0 | `source-security.log` |
+| `flutter test integration_test/phase16_role_smoke_test.dart -d R5CW30NE8ZV` | 14 başarılı, Sales 1 hatalı; tüm paket başarılı sayılmadı | 1 | `android-physical.log` |
+| `flutter test integration_test/sales_checkout_smoke_test.dart -d R5CW30NE8ZV` | Son yardımcısıyla Sales 1/1; toplam farklı başarılı fiziksel senaryo 15/15 | 0 | `android-sales-verified.log` |
+| `adb -s R5CW30NE8ZV install -r build/phase16-validation-20261013/physical-before.apk` | Eski APK geri yüklendi; son APK SHA-256 eşleşmesi true | 0 | `physical-restore-verified.log`, `physical-preservation.log` |
+| `git diff --check` | Son kapanışta temiz | 0 | `diff-check-final.log` |
+
+Normal APK: `build/phase16-validation-20261013/peksen-gida-phase16-debug.apk`, **223.428.222 bayt**. Telefonun önceki APK'sı `physical-before.apk`, son doğrulama kopyası `physical-after.apk`; bu yerel dosyalar ignore edilir, depoya eklenmez. APK varlığı build başarısının yerine kullanılmadı.
+
+**SQL ortam ayrımı:** Devam oturumunda DB container sağlıklı ve iç socket erişilebilirken host portu yayınlanmıyordu (`docker port` boş, `docker ps` yalnız 5432/tcp). Port/config/secret değiştirilmedi. Yerel fallback her değişmemiş SQL dosyasını ayrı `docker exec -i … psql -X -q -t -A -v ON_ERROR_STOP=1` oturumunda çalıştırdı; süreç çıkışı, tek TAP planı, ardışık assertion sayısı ve `not ok`/bailout yokluğu denetlendi. Script ve her paketin çıktısı kanıt dizinindedir. SQL testleri transaction sonunda rollback eder. CLI başarısızlığı bu PASS sonucu içinde gizlenmez; host üzerinden sonraki SDK/CLI kullanımı için yerel port erişimi yeniden sağlanmalıdır. Bu tur önce geçmiş gerçek SDK koşusu tekrar çalıştırılmadı.
+
+**Güvenlik incelemesi:** Yeni 21 kontrol tüm public/private uygulama tablolarının RLS'ini; anonim erişim ve authenticated ham yazma/private okuma yasaklarını; boş `search_path` kullanan definer RPC'lerini; server-only worker yetkilerini; private JPEG/PNG/5 MB kanıt sınırlarını; Owner-only maaş ve sahte rol metadata'sının yetki vermediğini sınar. Yedi gerçek rol testi ayrıca başka müşteri erişimi, doğrudan status yazma, Warehouse fiyat okuma, Accounting fiyat yazma, Driver rating okuma, kapalı durakta tahsilat, Manager maaş, ataması kaldırılan Sales ve logout sonrası erişimi reddeder. Stok/fiyat/snapshot ve idempotency mevcut RPC'lerle test edilir; servis dışından durum atlanmaz.
+
+Kaynak/config kontrolü yalnız Git'in takip ettiği dosyalarda yerel env/imza/APK/Firebase dosyası bulunmaması, tam literal özel anahtar blokları, Android backup kapalı/exported olmayan tracking service, debug-local HTTP istisnaları ve preview kapısı içindir. Genel secret tarayıcısı, bağımlılık CVE taraması veya sızma testi değildir. **İncelenen kapsamda kritik yetki/veri sızıntısı bulgusu yok.** İşlevsel kabul eksikleri ve test ortamı hataları aşağıdadır; üretim güvenlik garantisi verilmez.
+
+**Dosya erişimi kanıtı:** Bu tur SQL'deki Storage policy/bucket kontrolleri geçti. Gerçek SDK yükleme/indirme/MIME/boyut/upsert/delete ve Customer/Accounting/anon ret kanıtı önceki değişmemiş `delivery_storage_client_test.dart` için `build/phase13-validation-20261012/storage-sdk.log` dosyasındaki **1/1 / çıkış 0** sonucudur; log yeniden okundu, test bu tur tekrar çalıştırılmış sayılmaz. Fiziksel Android dosya seçici veya kanıt görüntüsü kabulü değildir.
+
+**Sales ilk hata ve düzeltme:** İlk 15'li koşu ve ilk hedefli tekrar (çıkış 1; `android-sales-final.log`) miktar girişinden sonra `ensureVisible`/klavye kaydırması sırasında “Sepete ekle” öğesini tap öncesi kaybetti. Sadece pumpAndSettle eklemek yeterli olmadı. Tanı koşusu aralıklı olarak geçti (`android-sales-diagnostic.log`, 0); geçici tanı çıktısı kodda bırakılmadı. Son yardımcı klavye açıkken `hitTestable()` öğesini arar, gerekiyorsa en çok 10 küçük kaydırma yapar ve gerçekten dokunulabilir tek düğmeyi şart koşup normal tap uygular. Gönderim/yeniden fiyat onayı/geri gezinme beklentileri kaldırılmadı. İş kodu değişmedi. Son fiziksel **1/1**, widget **13/13**, analyze **0**. İlk 14 senaryo yeniden koşturulmadan korunarak birleşik sonuç **15/15** kaydedildi; tek bir son 15'li başarılı koşu iddiası yok.
+
+**Telefon verisiyle ilgili hata:** Test komutlarında `--no-uninstall` unutuldu. Kurulu Flutter'ın `commands/test.dart` kaynağında `uninstall` varsayılanı true ve integration runner test bitiminde uninstall yapıyor. Her koşu ardından APK `install -r` ile geri yüklense de bu yerel veriyi/Keystore'u geri getirmez. Son kurulum zamanı `2026-10-14 11:16:00`, `shared_prefs` yok; eski oturum korunmadı. APK SHA-256 eşleşti, **veri/oturum geri yüklendi denemez; telefonda yeniden giriş gerekir**. Öncesine ait veri/Keystore yedeği yok; parola/token üretilmedi veya kayda yazılmadı. DB resetleri de önceki yerel Auth oturumlarını geçersiz kılar. Gelecek fiziksel testlerde aşağıdaki biçim ve aynı imzalı APK'nın finally içinde `adb install -r` ile geri yüklenmesi kullanılmalı; reinstall hata verirse uninstall ile aşılmamalı:
+
+```powershell
+flutter test integration_test/sales_checkout_smoke_test.dart -d R5CW30NE8ZV --no-uninstall
+```
+
+Fiziksel SM-S918B testleri deterministic/mock repository ile gerçek Android UI smoke'tur; yedi gerçek Auth/DB zinciri ayrı masaüstü SDK testidir. `physical-running.png` üzerinde yalnız Warehouse toplama iletişim kutusu incelendi; bütün ekranların manuel görsel kabulü veya gerçek cihaz uçtan uca backend kabulü iddia edilmez.
+
+**Kapanış:** Yerel otomatik güvenlik/iş akışı testleri ve seçili fiziksel smoke kapsamı tamamlandı. Faz 16 bütünü doğrulama bekler: eski telefon oturumu yeniden kurulmalı, host CLI erişim engeli ayrı kalır; uzun süreli GPS/izin kaldırma/otomatik fiziksel bitiş, üretim harita sağlayıcısı/lisansı ve assistant devri, fiziksel kanıt dosya seçici/görseli ve gerçek Firebase/FCM/token/arka plan/kapalı uygulama kabulleri kapanmadı. Failed/returned, stok telafisi, gerçek kalem revizyonu, tahsilat düzeltme/iptal, kanıt saklama ve diğer açık ticari kurallar uygulanmadı. Faz 17 açılmadı; secret/commit/push yok.
+
 ## 13 Ekim 2026 — Faz 15 rapor / Owner maaş ve audit kabulü
 
 Başlangıç temiz `4a61a11`. Kanıt dizini: `build/phase15-validation-20261013/`. Komutlar depo kökünde, yalnız yerel Supabase üzerinde çalıştırıldı. Çıkışlar tamamlanan süreçlerden alındı; APK varlığı tek başına build kanıtı sayılmadı.

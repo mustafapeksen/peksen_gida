@@ -14,14 +14,14 @@ COMMAND = ['docker', 'exec', '-i', CONTAINER, 'psql', '-X', '-qAt', '-v', 'ON_ER
 
 
 def run(sql):
-    result = subprocess.run(COMMAND, input=sql, text=True, capture_output=True, timeout=40)
+    result = subprocess.run(COMMAND, input=sql, text=True, encoding='utf-8', capture_output=True, timeout=40)
     if result.returncode:
         raise RuntimeError('Local SQL test failed: ' + result.stderr)
     return result.stdout.strip()
 
 
 def worker(sql):
-    process = subprocess.Popen(COMMAND, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    process = subprocess.Popen(COMMAND, stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, encoding='utf-8')
     process.stdin.write(sql)
     process.stdin.close()
     process.stdin = None

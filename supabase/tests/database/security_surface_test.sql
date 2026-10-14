@@ -1,0 +1,33 @@
+-- Phase 16: whole-schema authorization invariants, no new business rules.
+begin;
+create extension if not exists pgtap with schema extensions;
+set local search_path=public,extensions;
+select no_plan();
+select is((select count(*) from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='public' and c.relkind='r'),35::bigint,'Source table inventory remains 35');
+select ok(not exists(select 1 from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname in ('public','private') and c.relkind='r' and not c.relrowsecurity),'All app and private tables have RLS');
+select ok(not exists(select 1 from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname in ('public','private') and c.relkind='r' and has_table_privilege('anon',c.oid,'select,insert,update,delete,truncate')),'Anonymous role has no raw application table access');
+select ok(not exists(select 1 from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname in ('public','private') and c.relkind='r' and has_table_privilege('authenticated',c.oid,'insert,update,delete,truncate')),'All authenticated raw writes stay revoked, including Owner');
+select ok(not exists(select 1 from pg_class c join pg_namespace n on n.oid=c.relnamespace where n.nspname='private' and c.relkind='r' and has_table_privilege('authenticated',c.oid,'select')),'Private receipts, tokens and salary history have no raw client read grant');
+select ok(not exists(select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname in ('public','private') and p.prosecdef and not coalesce(p.proconfig @> array['search_path=""'],false)),'All application definer functions pin an empty search path');
+select ok(not exists(select 1 from pg_proc p join pg_namespace n on n.oid=p.pronamespace where n.nspname in ('public','private') and p.prosecdef and has_function_privilege('anon',p.oid,'execute')),'No anonymous application definer RPC');
+select ok(not has_function_privilege('authenticated','public.collect_notifications()','execute'),'Client cannot collect notifications as server');
+select ok(not has_function_privilege('authenticated','public.claim_push_jobs(integer)','execute'),'Client cannot claim sender jobs');
+select ok(not (select public from storage.buckets where id='delivery-evidence'),'Delivery evidence bucket private');
+select is((select file_size_limit from storage.buckets where id='delivery-evidence'),5242880::bigint,'Evidence limit exactly 5 MiB');
+select is((select allowed_mime_types from storage.buckets where id='delivery-evidence'),array['image/jpeg','image/png'],'Evidence MIME allowlist');
+select ok(not exists(select 1 from pg_policies where schemaname='storage' and tablename='objects' and policyname like 'delivery_evidence%' and cmd in ('ALL','UPDATE','DELETE')),'Evidence policies do not allow overwrite or delete');
+select is((select count(*) from pg_policies where schemaname='public' and tablename='employee_salary_records'),1::bigint,'Salary has only Owner read policy');
+select ok(not exists(select 1 from pg_policies where schemaname='public' and tablename='notifications' and policyname='owner_read'),'Owner notification history still own-user-only');
+-- Arbitrary role claims/user metadata do not elevate the persisted role.
+select set_config('request.jwt.claim.sub','30000000-0000-4000-8000-000000000002',true);
+select set_config('request.jwt.claims','{"role":"authenticated","app_role":"owner","user_metadata":{"role":"owner"}}',true);
+set local role authenticated;
+select is(private.current_app_role()::text,'sales_operator','Forged role claim cannot become Owner');
+select throws_ok($$select owner_salary_workspace('2026-10-01')$$,'42501',null::text,'Forged role cannot read salary');
+select throws_ok($$select owner_audit_page()$$,'42501',null::text,'Forged role cannot read audit');
+select is((select count(*) from employee_salary_records),0::bigint,'Forged role cannot bypass salary RLS');
+select throws_ok($$update profiles set role='owner' where id=auth.uid()$$,'42501',null::text,'Self role write denied');
+select throws_ok($$select assign_account_role(auth.uid(),'owner','Escalation')$$,'42501',null::text,'Sales role escalation RPC denied');
+reset role;
+select * from finish();
+rollback;

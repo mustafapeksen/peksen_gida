@@ -1,5 +1,7 @@
 # Pekşen Gıda çalışma kuralları
 
+**14 Ekim 2026 — Faz 16:** Kullanıcı `a354f39` Faz 15 yerel kapsamını kabul ederek PLAN'daki uçtan uca test + güvenlik incelemesini açtı. Yedi rol, fiyat/stok/tahsilat yarışları, RLS ve dosya erişimi mevcut onaylı kurallarla sınanır; yeni iş akışı açılmaz. Fiziksel telefon bağlandı; Android test kanıtı ile gerçek backend ve manuel/üretim kabulü ayrı tutulur. Faz 12–14 açıkları kapanmış sayılmaz. Faz 17, secret, commit/push kapalıdır; eski Faz 16 yasakları tarihçedir.
+
 **13 Ekim 2026 — Faz 15:** Kullanıcı `4a61a11` Faz 14 yerel kapsamını kabul ederek PLAN'daki Manager + Owner + reports kapsamını açtı. F15-01: İstanbul tarih aralığında operasyon raporları; Owner-only manuel aylık maaş/prim, gerekçeli revizyon ve audit; Owner salt okunur audit özeti. Otomatik bordro/prim, ayar yazma yok. Faz 12–14 açık kabulleri korunur; gerçek FCM bekler. Faz 16, secret, commit/push kapalıdır. Eski Faz 15 yasakları tarihçedir.
 
 **13 Ekim 2026 — Faz 14:** Kullanıcı Faz 13'ü `1e34812` ile kabul etti. F14-01 alıcı/duyuru kararları onaylandı; cihaz/session, kendi geçmişi, hedef kayda yetki denetimli bağlantı ve ayrı gönderici/tekrar kontrolünün yerel kapsamı uygulandı. Son sonuçlar PROGRESS/TESTING başındadır. Firebase projesi yok; gerçek push, üretim scheduler/runtime ve fiziksel Android kabulü açık, Faz 14 bütünü tamamlanmış sayılmaz. Faz 12/13 açık kabulleri ayrı kalır. Faz 15, secret, commit/push kapalıdır. Eski Faz 14 yasakları tarihçedir.

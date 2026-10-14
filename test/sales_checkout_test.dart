@@ -106,7 +106,18 @@ Future<void> addSalesItem(WidgetTester tester) async {
   await tester.tap(find.text('paket (0.25 kg)').last);
   await tester.pumpAndSettle();
   await tester.enterText(find.byType(TextField), '4');
-  await tapText(tester, 'Sepete ekle');
+  // Native IME resizing may scroll the lazy list again after ensureVisible.
+  // Keep the keyboard open and locate a genuinely tappable action; do not
+  // reposition an already visible button or bypass the user gesture.
+  await tester.pumpAndSettle();
+  final add = find.text('Sepete ekle').hitTestable();
+  for (var attempt = 0; attempt < 10 && add.evaluate().isEmpty; attempt++) {
+    await tester.drag(find.byType(ListView).last, const Offset(0, -100));
+    await tester.pumpAndSettle();
+  }
+  expect(add, findsOneWidget);
+  await tester.tap(add);
+  await tester.pumpAndSettle();
 }
 
 void main() {
